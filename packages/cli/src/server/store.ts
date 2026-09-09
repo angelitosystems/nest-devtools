@@ -191,9 +191,14 @@ export class DashboardStore {
     this.totalErrors = 0;
   }
 
-  /** Projects list with connection status. */
+  /** Projects list with connection status (only connected projects visible to CLI). */
   listProjects(): ProjectEntry[] {
-    return [...this.projects.values()].sort((a, b) => b.lastSeenAt - a.lastSeenAt);
+    return [...this.projects.values()].filter((entry) => entry.connected).sort((a, b) => b.lastSeenAt - a.lastSeenAt);
+  }
+
+  /** Projects currently connected (for UI / dashboard APIs). */
+  connectedProjects(): ProjectEntry[] {
+    return this.listProjects();
   }
 
   /** Latest performance snapshot for a project. */
