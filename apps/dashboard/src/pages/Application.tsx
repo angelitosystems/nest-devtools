@@ -6,14 +6,15 @@ import { cn } from '../lib/utils';
 
 export default function ApplicationPage({ store, focus }: { store: DevToolsState; focus: 'modules' | 'controllers' | 'providers' }) {
   const snapshots = Object.values(store.apps);
+  const dashboardsProjects = useMemo(() => Object.keys(store.apps), [store.apps]);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
 
   const flat = useMemo(() => {
-    const controllers: Array<{ module: string; name: string }> = [];
+    const controllers: Array<{ module: string; name: string; routes?: string[] }> = [];
     const providers: Array<{ module: string; name: string; type: string }> = [];
     for (const snapshot of snapshots) {
       for (const module of snapshot.modules) {
-        for (const controller of module.controllers) controllers.push({ module: module.name, name: controller.name });
+        for (const controller of module.controllers) controllers.push({ module: module.name, name: controller.name, routes: controller.routes });
         for (const provider of module.providers) providers.push({ module: module.name, name: provider.name, type: provider.type });
       }
     }
@@ -50,15 +51,15 @@ export default function ApplicationPage({ store, focus }: { store: DevToolsState
             <h2 className="flex items-center gap-2 text-base font-semibold mb-4">
               <Boxes className="h-4 w-4 text-accent-400" /> {current.name}
             </h2>
-            <MemberList title="Controllers" members={current.controllers.map((m) => m.name)} color="text-accent-400" />
-            <MemberList title="Providers" members={current.providers.map((m) => m.name)} color="text-emerald-400" />
+            <MemberList title="Controllers" members={current.controllers.map((m) => `${m.name}${m.routes && m.routes.length > 0 ? ' ' + m.routes.join(', ') : ''}`)} color="text-accent-400" />
+            <MemberList title="Providers" members={current.providers.map((m) => `${m.name} (${m.type})`)} color="text-emerald-400" />
           </>
         )}
 
         {focus === 'controllers' && (
           <>
             <h2 className="text-base font-semibold mb-4">All controllers ({flat.controllers.length})</h2>
-            <MemberList title="Controllers" members={flat.controllers.map((c) => `${c.name} — ${c.module}`)} color="text-accent-400" />
+            <MemberList title="Controllers" members={flat.controllers.map((c) => `${c.name} — ${c.module}${c.routes && c.routes.length > 0 ? ' ' + c.routes.join(', ') : ''}`)} color="text-accent-400" />
           </>
         )}
 
@@ -99,7 +100,7 @@ function ModuleTree({
           >
             <Box className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{module.name}</span>
-            <span className="ml-auto text-slate-600 text-[10px]">{module.controllers.length + module.providers.length}</span>
+            <span className="ml-auto text-slate-600 text-[10px]">{module.controllers.length + module.providers.length} members</span>
           </button>
         </li>
       ))}

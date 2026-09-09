@@ -86,6 +86,17 @@ export function useDevToolsStore(): DevToolsState {
             next.push(info);
             return next;
           });
+          setApps((prev) => ({ ...prev, [info.projectId]: (prev[info.projectId] ?? {}) }));
+          break;
+        }
+        case 'project.disconnected': {
+          const payload = message.payload as { projectId: string; reason?: string };
+          setProjects((prev) => prev.filter((p) => p.projectId !== payload.projectId));
+          setApps((prev) => {
+            const next = { ...prev };
+            delete next[payload.projectId];
+            return next;
+          });
           break;
         }
         case 'request.completed': {
