@@ -56,9 +56,12 @@ export async function main(argv: string[]): Promise<number> {
 /** Detect whether the SDK package is resolvable in the current environment. */
 async function sdkAvailable(): Promise<boolean> {
   try {
-    // best-effort: if the module resolves, assume it is usable
-    await import('@angelitosystems/nest-devtools');
-    return true;
+    // best-effort: check if the package is installed in node_modules
+    const pkgPath = resolve(process.cwd(), 'node_modules', '@angelitosystems', 'nest-devtools', 'package.json');
+    if (existsSync(pkgPath)) return true;
+    const globalPkgPath = resolve(process.execPath ? path.dirname(process.execPath as string) : '', 'node_modules', '@angelitosystems', 'nest-devtools', 'package.json');
+    if (existsSync(globalPkgPath)) return true;
+    return false;
   } catch {
     return false;
   }
