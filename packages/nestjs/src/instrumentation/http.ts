@@ -255,7 +255,7 @@ export class HttpInstrumentation {
       const key = rawKey.toLowerCase();
       const ok = RESPONSE_HEADERS.some((h) => h.toLowerCase() === key);
       if (!ok) continue;
-      const raw = (headers[rawKey] as string | number | undefined) ?? '';
+      const raw = (headers as any)[rawKey] as string | number | undefined ?? '';
       const value = String(raw);
       if (value === '') continue;
       out[key] = this.redactor.isSensitive(key) ? '[REDACTED]' : value.slice(0, 200);
