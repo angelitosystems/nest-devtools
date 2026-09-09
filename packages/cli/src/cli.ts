@@ -1,4 +1,4 @@
-import { join, resolve } from 'path';
+import { join, resolve, dirname } from 'path';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { DevToolsServer } from './server/server';
 import { CLIRenderer } from './ui/renderer';
