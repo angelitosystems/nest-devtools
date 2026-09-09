@@ -34,10 +34,14 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
       - name: Build docs
         run: bun run docs:build
         env:
-          DOCS_BASE: /nest-devtools/
+          DOCS_BASE: ${{ steps.pages.outputs.base_path }}/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

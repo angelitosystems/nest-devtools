@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Routes, Route, NavLink, useParams, useNavigate, Link } from 'react-router-dom';
 import { categories, pages, pageBySlug } from './markdown/loader';
 import { renderMarkdown } from './markdown/renderer';
+import Landing from './Landing';
 
 const SLUG_MAP = new Set(pages.map((page) => page.slug));
 
@@ -70,8 +71,8 @@ export default function App() {
 
         <main className="content">
           <Routes>
-            <Route path="/" element={<Home intro={intro} />} />
-            <Route path="/docs" element={<Home intro={intro} />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="/docs" element={<DocsHome intro={intro} />} />
             <Route path="/docs/:slug" element={<DocPageView />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
@@ -85,7 +86,7 @@ export default function App() {
 
 // ---------------------------------------------------------------- home page
 
-function Home({ intro }: { intro: NonNullable<ReturnType<typeof pageBySlug>> }) {
+function DocsHome({ intro }: { intro: NonNullable<ReturnType<typeof pageBySlug>> }) {
   useEffect(() => {
     document.title = 'NestJS DevTools · Docs';
   }, []);
