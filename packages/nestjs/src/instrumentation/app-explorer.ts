@@ -84,7 +84,8 @@ export class AppExplorer {
     const w = wrapper as { name?: string; metatype?: Function; subtype?: string; instance?: Record<string, unknown> } | null;
     const name = w?.metatype?.name ?? (typeof id === 'string' ? id.replace(/^[A-Z_0-9]+:/, '') : 'unknown');
     const type = classify(name, w?.instance);
-    return { name, type };
+    const routes = type === 'controller' ? extractControllerRoutes(w?.metatype) : undefined;
+    return { name, type, routes };
   }
 }
 
@@ -100,4 +101,48 @@ function classify(name: string, instance?: Record<string, unknown>): AppMemberNo
   if (instance && typeof instance.transform === 'function') return 'pipe';
   if (instance && typeof instance.catch === 'function') return 'filter';
   return 'provider';
+}
+
+/** Best-effort extraction of controller routes from a controller metatype. */
+function extractControllerRoutes(metatype?: Function): string[] {
+  if (!metatype) return [];
+  try {
+    const proto = metatype.prototype;
+    if (!proto) return [];
+    const props = Object.getOwnPropertyNames(proto).filter((name) => name !== 'constructor');
+    const routes: string[] = [];
+    for (const key of props) {
+      const desc = Object.getOwnPropertyDescriptor(proto, key);
+      if (!desc?.value) continue;
+      const value = desc.value;
+      const handlers = gatherMethodDecorators(value);
+      for (const h of handlers) {
+        if (typeof h === 'string' && h.length > 0) routes.push(h);
+      }
+    }
+    return routes;
+  } catch {
+    return [];
+  }
+}
+
+/** Attempt to extract path/method info from a controller method via decorator metadata. */
+function gatherMethodDecorators(value: Function): (string | undefined)[] {
+  try {
+    const entries = Reflect.getMetadata?.('design:type')
+      ? ([] as unknown[])
+      : [];
+    const meta = Reflect.getOwnMetadata?.('nestjs:rejected') ?? null;
+    const out: (string | undefined)[] = [];
+
+    if (value && typeof value === 'function') {
+      const candidate = value as unknown as { PATH?: string; METHOD?: string };
+      if (typeof candidate.PATH === 'string') out.push(candidate.PATH);
+      if (typeof candidate.METHOD === 'string') out.push(candidate.METHOD?.toLowerCase());
+    }
+
+    return out;
+  } catch {
+    return [];
+  }
 }
