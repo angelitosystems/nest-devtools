@@ -150,7 +150,8 @@ export class HttpInstrumentation {
       projectId: this.ctx.projectInfo.projectId,
       method,
       url,
-      headers: this.collectHeaders(req),
+      route: routeFromReq(req),
+      headers: this.collectRequestHeaders(req),
       query: parseQuery(rawUrl),
       ip: clientIp(req),
       userAgent: asString(req.headers['user-agent']) || undefined,
@@ -166,6 +167,10 @@ export class HttpInstrumentation {
     };
     spans.push(middlewareSpan);
 
+    const capturedBody = this.ctx.config.capture.requests && this.ctx.config.maxPayloadBytes > 0
+      ? captureRequestPreview(req, this.redactor)
+      : undefined;
+
     const onFinished = () => {
       const finishedAt = Date.now();
       middlewareSpan.duration = Math.max(0, finishedAt - middlewareSpan.startedAt);
@@ -176,9 +181,14 @@ export class HttpInstrumentation {
         label: 'response',
         duration: 0,
         startedAt: finishedAt,
-        status: 'ok',
+        status: res.statusCode >= 400 ? 'error' : 'ok',
       };
       spans.push(responseSpan);
+
+      const responseHeaders = this.collectResponseHeaders(res);
+      const responsePreview = this.ctx.config.capture.requests && this.ctx.config.maxPayloadBytes > 0
+        ? captureResponsePreview(res, this.redactor)
+        : undefined;
 
       const errored = res.statusCode >= 500;
 
@@ -187,11 +197,15 @@ export class HttpInstrumentation {
         projectId: this.ctx.projectInfo.projectId,
         method,
         url,
+        route: routeFromReq(req),
         statusCode: res.statusCode,
         duration: finishedAt - startedAt,
         startedAt,
         timeline: spans,
         query: parseQuery(rawUrl),
+        headers: responseHeaders,
+        responsePreview,
+        requestBody: capturedBody,
         errored,
       };
 
@@ -220,12 +234,28 @@ export class HttpInstrumentation {
     });
   }
 
-  private collectHeaders(req: IncomingMessage): Record<string, string> {
+  private collectRequestHeaders(req: IncomingMessage): Record<string, string> {
     const out: Record<string, string> = {};
-    for (const key of INTERESTING_HEADERS) {
+    for (const key of REQUEST_HEADERS) {
       const value = req.headers[key];
       if (value === undefined) continue;
       out[key] = this.redactor.isSensitive(key) ? '[REDACTED]' : asString(value).slice(0, 200);
+    }
+    return out;
+  }
+
+  private collectResponseHeaders(res: ServerResponse): Record<string, string> {
+    const out: Record<string, string> = {};
+    const headers = (res as unknown as Record<string, unknown>)._headers;
+    if (!headers || typeof headers !== 'object') return out;
+
+    for (const rawKey of Object.keys(headers)) {
+      const key = rawKey.toLowerCase();
+      if (!RESPONSE_HEADERS.includes(key as typeof RESPONSE_HEADERS[number])) continue;
+      const raw = (headers[rawKey] as string | number | undefined) ?? '';
+      const value = String(raw);
+      if (value === '') continue;
+      out[key] = this.redactor.isSensitive(key) ? '[REDACTED]' : value.slice(0, 200);
     }
     return out;
   }
@@ -268,4 +298,58 @@ function clientIp(req: IncomingMessage): string | undefined {
   return req.socket?.remoteAddress ?? undefined;
 }
 
-export { safeUrlPath, parseQuery, clientIp };
+/** Best-effort route extraction from Express/Nest request. */
+function routeFromReq(req: IncomingMessage): string | undefined {
+  try {
+    const http = req as unknown as { httpVersion?: string };
+    const out: RequestStartedPayload = {
+      requestId: '',
+      projectId: '',
+      method: '',
+      url: '',
+      route: undefined,
+      headers: {},
+      query: {},
+      ip: undefined,
+      userAgent: undefined,
+      startedAt: 0,
+    };
+    const route = (req as unknown as Record<string, unknown>).route;
+    if (route && typeof route === 'object' && route !== null) {
+      const name = route.name;
+      if (typeof name === 'string' && name.length > 0) return name;
+    }
+    const path = (req as unknown as { baseUrl?: string; path?: string }).baseUrl
+      ?? (req as unknown as { path?: string }).path;
+    if (typeof path === 'string' && path.length > 0) return path;
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Capture a safe preview of the request body (limited, redacted). */
+function captureRequestPreview(req: IncomingMessage, redactor: Redactor): unknown {
+  try {
+    const body = (req as unknown as Record<string, unknown>).body;
+    if (body === undefined || body === null) return undefined;
+    return redactor.redact(body);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Capture a safe preview of the response body after the response finishes. */
+function captureResponsePreview(res: ServerResponse, redactor: Redactor): unknown {
+  try {
+    const resLike = res as unknown as Record<string, unknown>;
+    const body = resLike.body;
+    if (body === undefined || body === null) return undefined;
+    if (typeof body === 'string') return redactor.redactString(body);
+    return redactor.redact(body);
+  } catch {
+    return undefined;
+  }
+}
+
+export { safeUrlPath, parseQuery, clientIp, routeFromReq };
