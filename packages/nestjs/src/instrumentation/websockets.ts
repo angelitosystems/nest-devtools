@@ -1,10 +1,6 @@
 import type { InstrumentationContext } from './http';
-import type {
-  DevToolsConfig,
-  ProjectInfo,
-  GatewayConnectionPayload,
-  GatewayMessagePayload,
-} from '@angelitosystems/devtools-protocol';
+import type { ProjectInfo, GatewayConnectionPayload, GatewayMessagePayload } from '@angelitosystems/devtools-protocol';
+import type { DevToolsConfig } from '@angelitosystems/devtools-core';
 import { requestContext } from '@angelitosystems/devtools-core';
 import { Redactor, randomId } from '@angelitosystems/devtools-protocol';
 import { emit } from '../emitter';

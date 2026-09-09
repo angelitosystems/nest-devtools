@@ -1,5 +1,6 @@
 import type { InstrumentationContext } from './http';
 import type { SourceLocation, TimelineSpan } from '@angelitosystems/devtools-protocol';
+import type { DevToolsConfig } from '@angelitosystems/devtools-core';
 import { requestContext } from '@angelitosystems/devtools-core';
 import { Redactor, randomId } from '@angelitosystems/devtools-protocol';
 import { emit } from '../emitter';
@@ -9,7 +10,7 @@ import { resolveSourceLocation } from '@angelitosystems/devtools-core';
 /** Queue/event instrumentation, best-effort and opt-in. */
 export class QueueEventInstrumentation {
   private readonly redactor: Redactor;
-  private readonly config: { capture: { requests: boolean; logs: boolean; errors: boolean; database: boolean; websockets: boolean; performance: boolean } };
+  private readonly config: DevToolsConfig;
   private readonly projectId: string;
 
   constructor(ctx: InstrumentationContext) {
