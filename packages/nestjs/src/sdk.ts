@@ -12,6 +12,7 @@ import { PerformanceInstrumentation } from './instrumentation/performance';
 import { AppExplorer } from './instrumentation/app-explorer';
 import { WebsocketInstrumentation } from './instrumentation/websockets';
 import { DatabaseInstrumentation } from './instrumentation/database';
+import { QueueEventInstrumentation } from './instrumentation/queue';
 import { detectNestJsVersion } from './detect';
 import { SDK_VERSION } from './version';
 import { printStartupBanner, printConnectionStatus } from './banner';
@@ -102,13 +103,14 @@ export class NestDevTools {
     // ---- application graph ----------------------------------------------
     registerCleanup(new AppExplorer({ config, projectInfo }).attach(app));
 
-    // ---- websockets + database (best effort) ----------------------------
+    // ---- websockets + database + queues (best effort) ------------------
     if (config.capture.websockets) {
       registerCleanup(new WebsocketInstrumentation({ config, projectInfo }).attach());
     }
     if (config.capture.database) {
       registerCleanup(new DatabaseInstrumentation({ config, projectInfo }).attach());
     }
+    registerCleanup(new QueueEventInstrumentation({ config, projectInfo }).attach());
 
     printStartupBanner({
       endpoint: config.server,
