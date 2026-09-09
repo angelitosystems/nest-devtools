@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Routes, Route, NavLink, useParams, useNavigate, Link } from 'react-router-dom';
 import { categories, pages, pageBySlug } from './markdown/loader';
-import { renderMarkdown } from './markdown/renderer.tsx';
+import { renderMarkdown } from './markdown/renderer';
 
 const SLUG_MAP = new Set(pages.map((page) => page.slug));
 
