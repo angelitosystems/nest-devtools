@@ -4,7 +4,7 @@ import type {
   ProjectInfo,
 } from '@angelitosystems/devtools-protocol';
 import { requestContext } from '@angelitosystems/devtools-core';
-import { Redactor } from '@angelitosystems/devtools-protocol';
+import { Redactor, randomId } from '@angelitosystems/devtools-protocol';
 import { emit } from '../emitter';
 import { recordSpan } from './timeline';
 
@@ -283,10 +283,3 @@ export class DatabaseInstrumentation {
   }
 }
 
-function randomId(prefix: string): string {
-  const core =
-    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-      ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
-      : Math.random().toString(36).slice(2, 8) + Date.now().toString(36);
-  return prefix ? `${prefix}_${core}` : core;
-}

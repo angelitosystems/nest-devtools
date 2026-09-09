@@ -100,6 +100,8 @@ export interface TimelineSpan {
   startedAt: number;
   status?: 'ok' | 'error';
   detail?: string;
+  /** Source location when available (file, line, column, function). */
+  source?: SourceLocation;
 }
 
 /** Emitted the moment a request enters the SDK. */
