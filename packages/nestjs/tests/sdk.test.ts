@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { describe, expect, it } from 'bun:test';
 import { NestFactory } from '@nestjs/core';
 import { Controller, Get, Module } from '@nestjs/common';
