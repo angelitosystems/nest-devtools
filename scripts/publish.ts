@@ -72,7 +72,8 @@ async function main(): Promise<void> {
   const token = process.env.NPM_TOKEN ?? await askSecret('npm token: ');
   if (!token) throw new Error('npm token is required');
 
-  const otp = process.env.NPM_OTP ?? await askSecret('npm OTP (press Enter if not required): ');
+  const otp = process.env.NPM_OTP
+    ?? (process.stdin.isTTY ? await askSecret('npm OTP (press Enter if not required): ') : '');
   if (otp) process.env.NPM_OTP = otp;
 
   const npmConfigPath = join(tmpdir(), `nests-devtools-npm-${process.pid}.npmrc`);
