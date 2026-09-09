@@ -59,7 +59,7 @@ async function sdkAvailable(): Promise<boolean> {
     // best-effort: check if the package is installed in node_modules
     const pkgPath = resolve(process.cwd(), 'node_modules', '@angelitosystems', 'nest-devtools', 'package.json');
     if (existsSync(pkgPath)) return true;
-    const globalPkgPath = resolve(process.execPath ? path.dirname(process.execPath as string) : '', 'node_modules', '@angelitosystems', 'nest-devtools', 'package.json');
+    const globalPkgPath = resolve(process.execPath ? dirname(process.execPath as string) : '', 'node_modules', '@angelitosystems', 'nest-devtools', 'package.json');
     if (existsSync(globalPkgPath)) return true;
     return false;
   } catch {
