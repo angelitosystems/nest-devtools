@@ -7,7 +7,7 @@ Anade instrumentacion para peticiones HTTP, logs, errores, rendimiento, grafo de
 ## Requisitos
 
 - Node.js 18 o superior, o Bun 1.1 o superior.
-- NestJS 9, 10 u 11.
+- NestJS 9, 10, 11 o 12.
 - `reflect-metadata` y `rxjs`, normalmente ya presentes en una aplicacion NestJS.
 
 ## Instalacion

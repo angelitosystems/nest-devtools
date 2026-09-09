@@ -195,7 +195,12 @@ bun run e2e            # end-to-end smoke: server + example app + traffic
 bun run dev:server     # DevTools server + dashboard  → http://localhost:4317
 bun run dev:example    # example NestJS app          → http://localhost:3001
 bun run dev:dashboard  # dashboard with HMR          → http://localhost:5173
+bun run docs:dev       # docs site with HMR          → http://localhost:5174
 ```
+
+## Documentation
+
+Full documentation lives in [`docs/`](docs/README.md) — **20 pages** covering installation, configuration, observability, security, the CLI, and the roadmap. It is also published as a static site ([Vite + React](apps/docs) that renders every markdown page in-browser) and automatically deployed to **GitHub Pages** on every push to `main` via [`.github/workflows/pages.yml`](.github/workflows/pages.yml).
 
 ## Roadmap
 

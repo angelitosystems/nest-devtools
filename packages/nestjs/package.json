@@ -36,8 +36,8 @@
     "@angelitosystems/devtools-protocol": "workspace:*"
   },
   "peerDependencies": {
-    "@nestjs/common": "^9.0.0 || ^10.0.0 || ^11.0.0",
-    "@nestjs/core": "^9.0.0 || ^10.0.0 || ^11.0.0",
+    "@nestjs/common": "^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0",
+    "@nestjs/core": "^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0",
     "reflect-metadata": "^0.1.12 || ^0.2.0",
     "rxjs": "^7.1.0"
   },
@@ -47,10 +47,10 @@
     }
   },
   "devDependencies": {
-    "@nestjs/common": "^11.0.0",
-    "@nestjs/core": "^11.0.0",
-    "@nestjs/platform-express": "^11.0.0",
-    "@nestjs/testing": "^11.0.0",
+    "@nestjs/common": "^12.0.1",
+    "@nestjs/core": "^12.0.1",
+    "@nestjs/platform-express": "^12.0.1",
+    "@nestjs/testing": "^12.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "tsup": "^8.3.0",

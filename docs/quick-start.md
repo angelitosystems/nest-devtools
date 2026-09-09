@@ -12,7 +12,7 @@ bun add @angelitosystems/nest-devtools
 # pnpm add @angelitosystems/nest-devtools
 ```
 
-Works with **Node.js** (18+) and **Bun**, on NestJS 9, 10 and 11.
+Works with **Node.js** (18+) and **Bun**, on NestJS 9, 10, 11 and 12.
 
 ## 2. Initialize in `main.ts`
 
