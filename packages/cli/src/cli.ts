@@ -3,8 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { DevToolsServer } from './server/server';
 import { CLIRenderer } from './ui/renderer';
 import { parseArgs, COMMANDS } from './ui/args';
-import { openInEditor, openTerminal } from './server/launcher';
-import type { LogPayload } from '@angelitosystems/devtools-protocol';
+import type { ProjectInfo } from '@angelitosystems/devtools-protocol';
 
 const CLI_VERSION = '0.1.0';
 const DEFAULT_HTTP_PORT = 4317;
@@ -54,9 +53,77 @@ export async function main(argv: string[]): Promise<number> {
   }
 }
 
+/** Detect whether the SDK package is resolvable in the current environment. */
+function sdkAvailable(): boolean {
+  try {
+    // best-effort: if the module resolves, assume it is usable
+    await import('@angelitosystems/nest-devtools');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Try to automatically instrument main.ts if it is a NestJS entrypoint. */
+async function autoInstrumentMain(): Promise<{ ok: boolean; target?: string; reason?: string }> {
+  const target = findMainEntrypoint();
+  if (!target) return { ok: false, reason: 'No NestJS entrypoint found (main.ts or src/main.ts)' };
+
+  const source = readFileSync(target, 'utf8');
+  if (source.includes('NestDevTools.init')) {
+    return { ok: true, target };
+  }
+
+  if (!await sdkAvailable()) {
+    return { ok: false, target, reason: 'SDK not available in this environment. Install it first: bun add @angelitosystems/nest-devtools' };
+  }
+
+  let updated = source;
+  const importStatement = `import { NestDevTools } from '@angelitosystems/nest-devtools';\n`;
+
+  if (!updated.includes('@angelitosystems/nest-devtools')) {
+    const lines = updated.split('\n');
+    let lastImportIndex = -1;
+    lines.forEach((line, index) => {
+      if (line.startsWith('import ')) lastImportIndex = index;
+    });
+    lines.splice(lastImportIndex + 1, 0, importStatement.trimEnd());
+    updated = lines.join('\n');
+  }
+
+  updated = updated.replace(
+    /(const\s+app\s*=\s*await\s+NestFactory\.create[^;]+;)/,
+    `$1\n  NestDevTools.init(app);`,
+  );
+
+  if (!updated.includes('NestDevTools.init(app)')) {
+    updated = updated.replace(/(await\s+app\.listen\()/, `NestDevTools.init(app);\n  await app.listen(`);
+  }
+
+  if (!updated.includes('NestDevTools.init(app)')) {
+    return { ok: false, target, reason: 'Could not inject NestDevTools.init(app) automatically' };
+  }
+
+  writeFileSync(target, updated);
+  return { ok: true, target };
+}
+
+/** Resolve a NestJS main file from the current working directory. */
+function findMainEntrypoint(): string | undefined {
+  return ['src/main.ts', 'main.ts'].find((candidate) => existsSync(candidate));
+}
+
 /** Long-running server mode with graceful shutdown. */
 async function runServer(options: { httpPort: number; wsPort: number; host: string }): Promise<number> {
   const dashboardDir = resolveDashboardDir();
+  const auto = await autoInstrumentMain();
+
+  if (!auto.ok && auto.reason) {
+    renderer.info(`Automatic instrumentation skipped: ${auto.reason}`);
+  } else if (auto.target && auto.ok) {
+    renderer.ok(`Instrumented ${auto.target} for DevTools`);
+  }
+
   const server = new DevToolsServer({
     httpPort: options.httpPort,
     wsPort: options.wsPort,
@@ -64,11 +131,11 @@ async function runServer(options: { httpPort: number; wsPort: number; host: stri
     dashboardDir,
     onEvent: (event, data) => {
       if (event === 'project-connected') {
-        const { projectId } = data as { projectId: string };
-        renderer.ok(`Project connected: ${projectId}`);
+        const project = data as ProjectInfo;
+        renderer.ok(`SDK connected: ${project.projectName} (${project.projectId})`);
       } else if (event === 'project-disconnected') {
         const { projectId } = data as { projectId: string };
-        renderer.info(`Project disconnected: ${projectId}`);
+        renderer.info(`SDK disconnected: ${projectId}`);
       }
     },
   });
@@ -88,7 +155,12 @@ async function runServer(options: { httpPort: number; wsPort: number; host: stri
   renderer.ok(dashboardDir ? 'Dashboard available' : 'Dashboard not built yet (showing placeholder page)');
   renderer.url('Dashboard', `http://localhost:${status.httpPort}`);
   renderer.info(`SDK endpoint: ws://localhost:${status.wsPort}`);
-  renderer.waiting();
+
+  if (status.projects.length === 0) {
+    renderer.info('Waiting for NestJS apps to connect... (Ctrl+C to stop)');
+  } else {
+    renderer.info(`${status.projects.length} project(s) connected`);
+  }
 
   const shutdown = async () => {
     renderer.info('\nShutting down...');
@@ -146,6 +218,9 @@ async function commandDoctor(httpPort: number, wsPort: number): Promise<number> 
   check(wsUp, `SDK endpoint accepting connections at ws://localhost:${wsPort}`, 'Run: nest-devtools start');
 
   check(existsSync('main.ts') || existsSync('src/main.ts'), 'NestJS project detected (main.ts found)', 'Run from your NestJS project root');
+
+  const sdkHere = await sdkAvailable();
+  check(sdkHere, 'SDK resolvable in this environment', 'Install it in this project: bun add @angelitosystems/nest-devtools');
 
   if (failures > 0) {
     renderer.warn(`${failures} check(s) failed`);
