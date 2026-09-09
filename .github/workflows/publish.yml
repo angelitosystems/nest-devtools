@@ -2,6 +2,11 @@ name: Manual Publish
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versión a publicar (ej. 1.2.3)'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -23,6 +28,9 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Set package versions
+        run: bun scripts/set-version.ts "${{ github.event.inputs.version }}"
 
       - name: Build packages
         run: bun run build
