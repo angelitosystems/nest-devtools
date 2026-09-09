@@ -149,7 +149,7 @@ export class DatabaseInstrumentation {
         if (!schema || typeof schema !== 'object') return;
         const hooks = schema.pre ?? null;
         if (typeof hooks !== 'function') return;
-        const originalPre = hooks.bind(schema) as ((method: string, fn: unknown) => void) | null;
+        const originalPre = hooks.bind(schema) as Function | null;
         if (!originalPre) return;
         schema.pre = function (method: string, fn: unknown) {
           if (method === 'find' || method === 'findOne' || method === 'findById' || method === 'aggregate' || method === 'countDocuments' || method === 'count') {
@@ -168,9 +168,9 @@ export class DatabaseInstrumentation {
                 throw err;
               }
             };
-            originalPre(method, wrapped);
+            originalPre.call(schema, method, wrapped);
           } else {
-            originalPre(method, fn);
+            originalPre.call(schema, method, fn);
           }
         };
       });
@@ -244,7 +244,7 @@ export class DatabaseInstrumentation {
 
   private getApp(): any {
     try {
-      const ctxAny = this.ctx as any;
+      const ctxAny: any = this.ctx;
       if (ctxAny && typeof ctxAny === 'object' && ctxAny.app) return ctxAny.app;
       if (ctxAny && typeof ctxAny === 'object' && ctxAny.getHttpAdapter) {
         return ctxAny;
