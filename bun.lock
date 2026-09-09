@@ -5,8 +5,8 @@
     "": {
       "name": "nest-devtools-monorepo",
       "devDependencies": {
-        "@types/node": "^22.10.0",
-        "typescript": "^5.7.0",
+        "@types/node": "^22.20.2",
+        "typescript": "^5.9.3",
       },
     },
     "apps/dashboard": {
@@ -64,7 +64,7 @@
     },
     "packages/cli": {
       "name": "@angelitosystems/nest-devtools-cli",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "bin": {
         "nest-devtools": "./dist/bin.cjs",
       },
@@ -82,7 +82,7 @@
     },
     "packages/core": {
       "name": "@angelitosystems/devtools-core",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "ws": "^8.18.0",
       },
@@ -96,7 +96,7 @@
     },
     "packages/nestjs": {
       "name": "@angelitosystems/nest-devtools",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@angelitosystems/devtools-core": "workspace:*",
         "@angelitosystems/devtools-protocol": "workspace:*",
@@ -123,7 +123,7 @@
     },
     "packages/protocol": {
       "name": "@angelitosystems/devtools-protocol",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "devDependencies": {
         "tsup": "^8.3.0",
         "typescript": "^5.7.0",

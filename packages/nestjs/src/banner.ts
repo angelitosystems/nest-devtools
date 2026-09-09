@@ -48,6 +48,8 @@ export function printConnectionStatus(state: 'open' | 'offline', dashboard: stri
     return;
   }
   writeOriginalConsole('log', ` ${paint(YELLOW, '⚠')}  No se pudo conectar al dashboard todavía.`);
-  writeOriginalConsole('log', `   ${paint(DIM, 'Levántalo en otra terminal con:')} ${paint(BOLD, 'npx nest-devtools start')}`);
+  writeOriginalConsole('log', `   ${paint(DIM, '¿Aún no lo instalaste? →')} ${paint(BOLD, 'bun add -g @angelitosystems/nest-devtools-cli')}`);
+  writeOriginalConsole('log', `   ${paint(DIM, 'Luego, en otra terminal: →')} ${paint(BOLD, 'nest-devtools start')}`);
+  writeOriginalConsole('log', `   ${paint(DIM, '(sin instalar, una sola vez: npx -p @angelitosystems/nest-devtools-cli nest-devtools start)')}`);
   writeOriginalConsole('log', `   ${paint(DIM, 'Reintentando en segundo plano — se conectará solo cuando el dashboard esté arriba.')}`);
 }
