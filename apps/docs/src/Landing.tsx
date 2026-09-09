@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const features = [
@@ -44,6 +44,10 @@ function CodeBlock({ label, children, copy }: { label: string; children: React.R
 }
 
 export default function Landing() {
+  useEffect(() => {
+    document.title = 'NestJS DevTools · Observabilidad en tiempo real';
+  }, []);
+
   return (
     <div className="landing-shell">
       <div className="top-ticker" aria-label="Anuncios de Angelito Systems">

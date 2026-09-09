@@ -7,6 +7,19 @@ import Landing from './Landing';
 const SLUG_MAP = new Set(pages.map((page) => page.slug));
 
 export default function App() {
+  const intro = pageBySlug('readme') ?? pages[0];
+
+  return (
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="/docs" element={<DocsShell><DocsHome intro={intro} /></DocsShell>} />
+      <Route path="/docs/:slug" element={<DocsShell><DocPageView /></DocsShell>} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
+
+function DocsShell({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
@@ -20,8 +33,6 @@ export default function App() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
-
-  const intro = pageBySlug('readme') ?? pages[0];
 
   return (
     <>
@@ -70,12 +81,7 @@ export default function App() {
         </aside>
 
         <main className="content">
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/docs" element={<DocsHome intro={intro} />} />
-            <Route path="/docs/:slug" element={<DocPageView />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          {children}
         </main>
       </div>
 
