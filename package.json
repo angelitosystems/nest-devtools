@@ -16,6 +16,7 @@
     "build": "bun run --cwd packages/protocol build && bun run --cwd packages/core build && bun run --cwd packages/nestjs build && bun run --cwd packages/cli build && bun run --cwd examples/basic-nestjs build",
     "test": "bun test packages examples",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "e2e": "bun scripts/e2e-smoke.mjs",
     "dev:dashboard": "bun run --cwd apps/dashboard dev",
     "dev:server": "bun run --cwd packages/cli dev",
     "dev:example": "bun run --cwd examples/basic-nestjs dev"

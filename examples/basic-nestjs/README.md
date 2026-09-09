@@ -18,3 +18,5 @@ Then open **http://localhost:4317** and watch requests, logs and errors appear i
 - `GET /cats` → logs + fast requests
 - `GET /cats/999` → 500 + grouped error with source location
 - `POST /cats` with a secret body → demonstrates automatic redaction
+
+Documentation: [docs/README.md](../../docs/README.md)

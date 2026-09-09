@@ -180,6 +180,14 @@ function Topbar({
           </option>
         ))}
       </select>
+      <a
+        href="https://github.com/angelitosystems/nest-devtools/tree/main/docs"
+        target="_blank"
+        rel="noreferrer"
+        className="text-sm px-3 py-1.5 rounded-md bg-surface-800 border border-surface-600 hover:bg-surface-700 text-slate-300"
+      >
+        Docs
+      </a>
       <button
         onClick={onClear}
         className="text-sm px-3 py-1.5 rounded-md bg-surface-800 border border-surface-600 hover:bg-surface-700 text-slate-300"

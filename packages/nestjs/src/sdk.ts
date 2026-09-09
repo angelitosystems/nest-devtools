@@ -71,7 +71,7 @@ export class NestDevTools {
     coreDevtools.initialize({ config, projectInfo, registerCleanup });
 
     const adapter = app.getHttpAdapter();
-    const httpReady = Boolean(adapter && adapter.getType() === 'http');
+    const httpReady = Boolean(adapter && ['http', 'express'].includes(adapter.getType()));
 
     // ---- HTTP instrumentation -------------------------------------------
     const http = new HttpInstrumentation({ config, projectInfo });

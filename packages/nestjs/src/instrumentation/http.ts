@@ -59,7 +59,8 @@ export class HttpInstrumentation {
   attach(app: INestApplication): () => void {
     try {
       const adapter = app.getHttpAdapter();
-      if (!adapter || adapter.getType() !== 'http') return () => {};
+      // 'http' = platform-default adapter, 'express' = @nestjs/platform-express
+      if (!adapter || !['http', 'express'].includes(adapter.getType())) return () => {};
 
       const getServer = (): HttpServer | undefined =>
         (adapter as unknown as { getHttpServer?: () => HttpServer }).getHttpServer?.();
