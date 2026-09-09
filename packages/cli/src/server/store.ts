@@ -162,11 +162,6 @@ export class DashboardStore {
     }
   }
 
-  /** Aggregated counters for CLI status. */
-  counters(): ServerStatus['totalRequests'] {
-    return this.totalRequests;
-  }
-
   /** Full status snapshot for CLI / doctor. */
   statusSnapshot(other?: { dashboardClients?: number; projects?: ProjectEntry[] }): ServerStatus {
     return {
@@ -183,9 +178,17 @@ export class DashboardStore {
     };
   }
 
+
   /** Aggregated counters for CLI status. */
   counters(): { totalRequests: number; totalLogs: number; totalErrors: number } {
     return { totalRequests: this.totalRequests, totalLogs: this.totalLogs, totalErrors: this.totalErrors };
+  }
+
+  /** Reset counters (used for CLI `state.clear` integration tests). */
+  resetCounters(): void {
+    this.totalRequests = 0;
+    this.totalLogs = 0;
+    this.totalErrors = 0;
   }
 
   /** Projects list with connection status. */
