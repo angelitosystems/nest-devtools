@@ -75,7 +75,7 @@ export class NestDevTools {
       config,
       projectInfo,
       registerCleanup,
-      onStateChange: (state) => {
+      onStateChange: (state: any) => {
         if (state === 'open') {
           printConnectionStatus('open', dashboardUrl(config.server));
         } else if (state === 'retrying' && !hasWarnedOffline) {
@@ -83,7 +83,7 @@ export class NestDevTools {
           printConnectionStatus('offline', dashboardUrl(config.server));
         }
       },
-    });
+    } as any);
 
     const adapter = app.getHttpAdapter();
     const httpReady = Boolean(adapter && ['http', 'express'].includes(adapter.getType()));
