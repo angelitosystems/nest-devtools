@@ -86,7 +86,34 @@ button { font-family: inherit; }
 .doc-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13.5px; }.doc-table th { text-align: left; padding: 10px 12px; background: var(--bg-card); color: var(--text-faint); font-size: 11px; text-transform: uppercase; letter-spacing: .1em; border-bottom: 1px solid var(--line); }.doc-table td { padding: 10px 12px; border-bottom: 1px solid var(--line-soft); color: var(--text-dim); }.doc-table td:first-child { color: var(--accent); font-size: 12.5px; }
 .landing-shell .footer { border-top: 1px solid var(--line-soft); padding: 36px 24px 48px; text-align: center; color: var(--text-dim); font-size: 14px; }.footer p { margin: 6px 0; }.footer-links a { color: var(--accent); margin: 0 4px; }.footer-legal { color: var(--text-faint); font-size: 12.5px; }
 
+/* Keep the product overview readable instead of placing sections in two grid columns. */
+.landing-shell .landing-content {
+  display: block;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 48px 80px;
+  border-top: 1px solid var(--line-soft);
+}
+.landing-shell .landing-content::before { display: none; }
+.landing-shell .doc-section { margin-bottom: 64px; scroll-margin-top: 80px; }
+.landing-shell .doc-section:last-child { margin-bottom: 0; }
+.landing-shell .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.landing-shell .code-block { max-width: 100%; }
+.landing-shell .code-block pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.landing-shell .install-line { max-width: 100%; overflow-x: auto; white-space: nowrap; }
+
 @media (max-width: 960px) { .hero { grid-template-columns: 1fr; padding-top: 48px; }.signal-strip { grid-template-columns: repeat(2, 1fr); }.landing-content { grid-template-columns: 1fr; padding-left: 0; }.landing-content::before { display: none; }.topnav { gap: 14px; }.topnav a:not(.nav-link) { display: none; } }
+
+@media (max-width: 640px) {
+  .landing-shell .landing-topbar { padding: 14px 20px; }
+  .landing-shell .hero { padding: 48px 20px 40px; }
+  .landing-shell .hero h1 { font-size: clamp(36px, 12vw, 54px); }
+  .landing-shell .signal-strip { grid-template-columns: 1fr; padding: 0 20px 40px; }
+  .landing-shell .signal-strip > div { border-width: 1px 1px 0; }
+  .landing-shell .signal-strip > div:last-child { border-bottom: 1px solid var(--line-soft); }
+  .landing-shell .landing-content { padding: 32px 20px 56px; }
+  .landing-shell .feature-grid { grid-template-columns: 1fr; }
+}
 
 
 /* ------------------------------------------------------------- topbar */
