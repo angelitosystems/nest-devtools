@@ -132,6 +132,7 @@ export interface RequestCompletedPayload {
   startedAt: number;
   timeline: TimelineSpan[];
   query?: Record<string, unknown>;
+  headers?: Record<string, string>;
   responsePreview?: string;
   responseBody?: unknown;
   requestBody?: unknown;

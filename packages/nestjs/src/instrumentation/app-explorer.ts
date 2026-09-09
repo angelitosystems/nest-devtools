@@ -132,7 +132,7 @@ function extractControllerRoutes(metatype?: Function): string[] {
 /** Attempt to extract HTTP routes from a controller method via NestJS decorators. */
 function gatherHttpRoutes(value: Function): (string | undefined)[] {
   try {
-    const decorators = Reflect.getMetadata?.('design:http:method', {} as any, undefined, undefined) ?? [];
+    const decorators = (Reflect as any).getMetadata?.('design:http:method', {} as any, undefined, undefined) ?? [];
     const out: (string | undefined)[] = [];
 
     if (decorators.length > 0) {

@@ -17,10 +17,10 @@ export class WebsocketInstrumentation {
   private readonly redactor: Redactor;
   private readonly config: DevToolsConfig;
   private readonly projectId: string;
-  private readonly ctx: InstrumentationContext;
+  private readonly ctxRaw: InstrumentationContext;
 
   constructor(ctx: InstrumentationContext) {
-    this.ctx = ctx;
+    this.ctxRaw = ctx;
     this.config = ctx.config;
     this.projectId = ctx.projectInfo.projectId;
     this.redactor = new Redactor({
@@ -183,7 +183,7 @@ export class WebsocketInstrumentation {
 
   private getApp(): any {
     try {
-      const ctx = this.ctx as any;
+      const ctx: any = this.ctxRaw;
       if (ctx.getHttpAdapter) return ctx;
       if (ctx.app) return ctx.app;
       return null;

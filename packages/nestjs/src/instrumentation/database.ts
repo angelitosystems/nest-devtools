@@ -11,10 +11,10 @@ export class DatabaseInstrumentation {
   private readonly redactor: Redactor;
   private readonly config: DevToolsConfig;
   private readonly projectId: string;
-  private readonly ctx: InstrumentationContext;
+  private readonly ctxRaw: InstrumentationContext;
 
   constructor(ctx: InstrumentationContext) {
-    this.ctx = ctx;
+    this.ctxRaw = ctx;
     this.config = ctx.config;
     this.projectId = ctx.projectInfo.projectId;
     this.redactor = new Redactor({
@@ -145,32 +145,34 @@ export class DatabaseInstrumentation {
       const mongoose = this.resolveMongoose(app);
       if (!mongoose) return false;
 
+      const instrumentation = this;
       const hook = mongoose.plugin((schema: any, _name: string) => {
         if (!schema || typeof schema !== 'object') return;
         const hooks = schema.pre ?? null;
         if (typeof hooks !== 'function') return;
-        const originalPre = hooks.bind(schema) as Function | null;
-        if (!originalPre) return;
+        const bound = hooks.bind(schema);
+        if (!bound) return;
+        const originalPre = bound as (method: string, fn: unknown) => void;
         schema.pre = function (method: string, fn: unknown) {
           if (method === 'find' || method === 'findOne' || method === 'findById' || method === 'aggregate' || method === 'countDocuments' || method === 'count') {
             const wrapped = async function (this: unknown, ...args: unknown[]) {
               const started = Date.now();
               const sql = `[Mongoose:${method}]`;
-              this.startQuery(sql, args);
+              instrumentation.startQuery(sql, args);
               try {
                 const handler = fn as ((...args: unknown[]) => unknown) | null;
                 if (!handler) return;
                 const result = await handler.apply(this, args);
-                this.endQuery(sql, args, Date.now() - started);
+                instrumentation.endQuery(sql, args, Date.now() - started);
                 return result;
               } catch (err) {
-                this.endQuery(sql, args, Date.now() - started, err);
+                instrumentation.endQuery(sql, args, Date.now() - started, err);
                 throw err;
               }
             };
-            originalPre.call(schema, method, wrapped);
+            originalPre(method, wrapped as unknown);
           } else {
-            originalPre.call(schema, method, fn);
+            originalPre(method, fn as unknown);
           }
         };
       });
@@ -244,10 +246,10 @@ export class DatabaseInstrumentation {
 
   private getApp(): any {
     try {
-      const ctxAny: any = this.ctx;
-      if (ctxAny && typeof ctxAny === 'object' && ctxAny.app) return ctxAny.app;
-      if (ctxAny && typeof ctxAny === 'object' && ctxAny.getHttpAdapter) {
-        return ctxAny;
+      const ctx = this.ctxRaw as any;
+      if (ctx && typeof ctx === 'object' && (ctx as any).app) return (ctx as any).app;
+      if (ctx && typeof ctx === 'object' && (ctx as any).getHttpAdapter) {
+        return ctx as any;
       }
       return null;
     } catch {

@@ -222,7 +222,7 @@ export class HttpInstrumentation {
           name: 'HttpError',
           message: `${method} ${url} failed with status ${res.statusCode}`,
           fingerprint: httpErrorFingerprint(method, url, res.statusCode),
-          request: { method, url, statusCode: res.statusCode },
+          request: { method, url: String(url), statusCode: res.statusCode },
           timestamp: finishedAt,
         });
       }
@@ -317,10 +317,10 @@ function routeFromReq(req: IncomingMessage): string | undefined {
       userAgent: undefined,
       startedAt: 0,
     };
-    const route = (req as unknown as Record<string, unknown>).route;
-    if (route && typeof route === 'object' && route !== null) {
-      const routeAny = route as any;
-      const name = routeAny.name;
+    const routeRaw: unknown = (req as unknown as Record<string, unknown>).route;
+    if (routeRaw && typeof routeRaw === 'object' && routeRaw !== null) {
+      const route = routeRaw as { name?: unknown };
+      const name = route.name as string | undefined;
       if (typeof name === 'string' && name.length > 0) return name;
     }
     const path = (req as unknown as { baseUrl?: string }).baseUrl
@@ -344,13 +344,13 @@ function captureRequestPreview(req: IncomingMessage, redactor: Redactor): unknow
 }
 
 /** Capture a safe preview of the response body after the response finishes. */
-function captureResponsePreview(res: ServerResponse, redactor: Redactor): unknown {
+function captureResponsePreview(res: ServerResponse, redactor: Redactor): string | undefined {
   try {
     const resLike = res as unknown as Record<string, unknown>;
     const body = resLike.body;
     if (body === undefined || body === null) return undefined;
     if (typeof body === 'string') return redactor.redactString(body);
-    return redactor.redact(body);
+    return redactor.serialize(body);
   } catch {
     return undefined;
   }
