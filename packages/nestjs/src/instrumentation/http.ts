@@ -319,7 +319,7 @@ function routeFromReq(req: IncomingMessage): string | undefined {
     };
     const route = (req as unknown as Record<string, unknown>).route;
     if (route && typeof route === 'object' && route !== null) {
-      const name = (route as { name?: unknown }).name;
+      const name = (route as { name?: string }).name;
       if (typeof name === 'string' && name.length > 0) return name;
     }
     const path = (req as unknown as { baseUrl?: string }).baseUrl

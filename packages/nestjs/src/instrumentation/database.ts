@@ -149,8 +149,9 @@ export class DatabaseInstrumentation {
         if (!schema || typeof schema !== 'object') return;
         const hooks = schema.pre ?? null;
         if (typeof hooks !== 'function') return;
-        const originalPre = hooks.bind(schema);
-        (schema as Record<string, unknown>).pre = function (method: string, fn: unknown) {
+        const originalPre = hooks.bind(schema) as ((method: string, fn: unknown) => void) | null;
+        if (!originalPre) return;
+        schema.pre = function (method: string, fn: unknown) {
           if (method === 'find' || method === 'findOne' || method === 'findById' || method === 'aggregate' || method === 'countDocuments' || method === 'count') {
             const wrapped = async function (this: unknown, ...args: unknown[]) {
               const started = Date.now();
@@ -167,9 +168,9 @@ export class DatabaseInstrumentation {
                 throw err;
               }
             };
-            originalPre.call(schema, method, wrapped);
+            originalPre(method, wrapped);
           } else {
-            originalPre.call(schema, method, fn);
+            originalPre(method, fn);
           }
         };
       });
