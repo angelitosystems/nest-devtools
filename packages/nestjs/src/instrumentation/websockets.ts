@@ -195,10 +195,3 @@ export class WebsocketInstrumentation {
   }
 }
 
-function randomId(prefix: string): string {
-  const core =
-    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-      ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
-      : Math.random().toString(36).slice(2, 8) + Date.now().toString(36);
-  return prefix ? `${prefix}_${core}` : core;
-}
