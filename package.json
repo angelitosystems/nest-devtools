@@ -19,7 +19,10 @@
     "e2e": "bun scripts/e2e-smoke.mjs",
     "dev:dashboard": "bun run --cwd apps/dashboard dev",
     "dev:server": "bun run --cwd packages/cli dev",
-    "dev:example": "bun run --cwd examples/basic-nestjs dev"
+    "dev:example": "bun run --cwd examples/basic-nestjs dev",
+    "docs:dev": "bun run --cwd apps/docs dev",
+    "docs:build": "bun run --cwd apps/docs build",
+    "typecheck:docs": "tsc -p apps/docs/tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
