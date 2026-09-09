@@ -10,6 +10,7 @@ import type {
   StateSnapshot,
 } from '@angelitosystems/devtools-protocol';
 import type { ProjectEntry } from './types';
+import type { ServerStatus } from './types';
 
 /** Capacity limits (memory guardrails). */
 export const LIMITS = {
@@ -159,6 +160,27 @@ export class DashboardStore {
       this.totalLogs = 0;
       this.totalErrors = 0;
     }
+  }
+
+  /** Aggregated counters for CLI status. */
+  counters(): ServerStatus['totalRequests'] {
+    return this.totalRequests;
+  }
+
+  /** Full status snapshot for CLI / doctor. */
+  statusSnapshot(other?: { dashboardClients?: number; projects?: ProjectEntry[] }): ServerStatus {
+    return {
+      running: true,
+      httpPort: 4317,
+      wsPort: 4318,
+      startedAt: Date.now(),
+      uptimeMs: Date.now(),
+      projects: other?.projects ?? this.listProjects(),
+      dashboardClients: other?.dashboardClients ?? 0,
+      totalRequests: this.totalRequests,
+      totalLogs: this.totalLogs,
+      totalErrors: this.totalErrors,
+    };
   }
 
   /** Aggregated counters for CLI status. */
