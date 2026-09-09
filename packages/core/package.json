@@ -1,6 +1,6 @@
 {
   "name": "@angelitosystems/devtools-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Transport, request context, source-map resolution and metrics for NestJS DevTools.",
   "license": "MIT",
   "type": "module",

@@ -1,6 +1,6 @@
 {
   "name": "@angelitosystems/nest-devtools-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DevTools server, dashboard hosting and CLI for NestJS DevTools.",
   "license": "MIT",
   "type": "module",

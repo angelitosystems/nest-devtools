@@ -1,6 +1,6 @@
 {
   "name": "@angelitosystems/nest-devtools",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "One-line real-time debugging and observability for NestJS applications.",
   "license": "MIT",
   "type": "module",

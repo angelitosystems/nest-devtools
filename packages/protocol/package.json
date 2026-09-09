@@ -1,6 +1,6 @@
 {
   "name": "@angelitosystems/devtools-protocol",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Typed WebSocket protocol shared by the NestJS DevTools SDK, server and dashboard.",
   "license": "MIT",
   "type": "module",
