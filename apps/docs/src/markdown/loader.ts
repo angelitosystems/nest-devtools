@@ -5,7 +5,7 @@
  * docs/*.md file into the bundle at build time — no runtime fetches, no
  * redirects, works on GitHub Pages as a pure static SPA.
  */
-const modules = import.meta.glob('../../../docs/*.md', {
+const modules = import.meta.glob('../../../../docs/*.md', {
   query: '?raw',
   import: 'default',
   eager: true,
