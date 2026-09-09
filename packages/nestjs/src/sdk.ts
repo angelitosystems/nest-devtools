@@ -5,7 +5,7 @@ import type { ProjectInfo } from '@angelitosystems/devtools-protocol';
 import type { INestApplication } from '@nestjs/common';
 
 import { HttpInstrumentation } from './instrumentation/http';
-import { ConsoleInstrumentation } from './instrumentation/console';
+import { ConsoleInstrumentation, writeOriginalConsole } from './instrumentation/console';
 import { LoggerInstrumentation } from './instrumentation/nest-logger';
 import { ExceptionsInstrumentation, captureError } from './instrumentation/exceptions';
 import { PerformanceInstrumentation } from './instrumentation/performance';
@@ -96,6 +96,10 @@ export class NestDevTools {
       registerCleanup(new DatabaseInstrumentation({ config, projectInfo }).attach());
     }
 
+    writeOriginalConsole('log', '[NestJS DevTools] SDK started');
+    writeOriginalConsole('log', `  SDK endpoint: ${config.server}`);
+    writeOriginalConsole('log', `  Dashboard: ${dashboardUrl(config.server)}`);
+
     return {
       enabled: true,
       projectId: config.projectId,
@@ -149,6 +153,21 @@ function detectRuntime(): string {
 function detectRuntimeVersion(): string {
   const versions = process.versions as Record<string, string | undefined>;
   return versions['bun'] ?? versions['deno'] ?? process.version;
+}
+
+function dashboardUrl(server: string): string {
+  try {
+    const url = new URL(server);
+    url.protocol = url.protocol === 'wss:' ? 'https:' : 'http:';
+    const port = Number(url.port);
+    url.port = String(Number.isFinite(port) && port > 0 ? port - 1 : 4317);
+    url.pathname = '';
+    url.search = '';
+    url.hash = '';
+    return url.toString().replace(/\/$/, '');
+  } catch {
+    return 'http://localhost:4317';
+  }
 }
 
 export { captureError };

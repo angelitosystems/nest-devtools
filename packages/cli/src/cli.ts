@@ -265,6 +265,7 @@ function resolveDashboardDir(): string | undefined {
   const here = typeof __dirname === 'string' ? __dirname : '.';
   const candidates = [
     resolve(process.cwd(), 'apps/dashboard/dist'),
+    resolve(here, '../public'),
     resolve(here, '../../dashboard/dist'),
     resolve(here, '../../../apps/dashboard/dist'),
   ];
