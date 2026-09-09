@@ -19,8 +19,8 @@ export interface InstrumentationContext {
   projectInfo: ProjectInfo;
 }
 
-/** Headers captured by default (denylist still applies). */
-const INTERESTING_HEADERS = [
+/** Request headers captured by default (denylist still applies). */
+const REQUEST_HEADERS = [
   'content-type',
   'content-length',
   'accept',
@@ -29,6 +29,17 @@ const INTERESTING_HEADERS = [
   'user-agent',
   'x-forwarded-for',
   'x-request-id',
+  'x-forwarded-proto',
+] as const;
+
+/** Response headers captured by default. */
+const RESPONSE_HEADERS = [
+  'content-type',
+  'content-length',
+  'location',
+  'set-cookie',
+  'x-request-id',
+  'x-response-time',
 ] as const;
 
 type RequestListener = (req: IncomingMessage, res: ServerResponse) => void;
