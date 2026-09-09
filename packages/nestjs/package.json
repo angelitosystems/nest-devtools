@@ -1,0 +1,59 @@
+{
+  "name": "@angelitosystems/nest-devtools",
+  "version": "0.1.0",
+  "description": "One-line real-time debugging and observability for NestJS applications.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean --sourcemap",
+    "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
+    "test": "bun test"
+  },
+  "keywords": [
+    "nestjs",
+    "devtools",
+    "debugging",
+    "observability",
+    "logging",
+    "monitoring",
+    "websocket"
+  ],
+  "dependencies": {
+    "@angelitosystems/devtools-core": "workspace:*",
+    "@angelitosystems/devtools-protocol": "workspace:*"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^9.0.0 || ^10.0.0 || ^11.0.0",
+    "@nestjs/core": "^9.0.0 || ^10.0.0 || ^11.0.0",
+    "reflect-metadata": "^0.1.12 || ^0.2.0",
+    "rxjs": "^7.1.0"
+  },
+  "peerDependenciesMeta": {
+    "rxjs": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/testing": "^11.0.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0"
+  }
+}

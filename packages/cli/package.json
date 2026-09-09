@@ -1,0 +1,41 @@
+{
+  "name": "@angelitosystems/nest-devtools-cli",
+  "version": "0.1.0",
+  "description": "DevTools server, dashboard hosting and CLI for NestJS DevTools.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "nest-devtools": "./dist/bin.cjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "public"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts src/bin.ts --format esm,cjs --clean --sourcemap --no-splitting && bun build src/bin.ts --compile --outfile dist/bin",
+    "dev": "tsup src/index.ts src/bin.ts --format esm --watch",
+    "test": "bun test",
+    "start": "bun run dist/bin.cjs"
+  },
+  "dependencies": {
+    "@angelitosystems/devtools-core": "workspace:*",
+    "@angelitosystems/devtools-protocol": "workspace:*",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.5.13",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0"
+  }
+}
