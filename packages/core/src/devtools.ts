@@ -2,11 +2,14 @@ import type { DevToolsEventMap, DevToolsEventName, PerformanceSnapshot, ProjectI
 import { LatencyTracker, ProcessMetrics } from './metrics';
 import type { DevToolsConfig } from './config';
 import { DevToolsTransport } from './transport';
+import type { TransportState } from './transport';
 
 export interface CoreDevtoolsOptions {
   config: DevToolsConfig;
   projectInfo: ProjectInfo;
   registerCleanup?: (fn: () => void) => void;
+  /** Notified whenever the dashboard connection state changes. */
+  onStateChange?: (state: TransportState) => void;
 }
 
 /**
@@ -37,6 +40,7 @@ class CoreDevtools {
       batchMax: options.config.batchMax,
       flushInterval: options.config.flushInterval,
       maxPayloadBytes: options.config.maxPayloadBytes,
+      onStateChange: options.onStateChange,
     });
     this.transport.start();
     this.send('project.connected', options.projectInfo);

@@ -35,6 +35,7 @@ export class DevToolsTransport {
       flushInterval?: number;
       maxPayloadBytes?: number;
       onMessage?: OnServerMessage;
+      onStateChange?: (state: TransportState) => void;
     },
   ) {}
 
@@ -61,12 +62,22 @@ export class DevToolsTransport {
       /* ignore */
     }
     this.ws = null;
-    this.state = 'closed';
+    this.setState('closed');
   }
 
   /** Current connection state. */
   getState(): TransportState {
     return this.state;
+  }
+
+  private setState(state: TransportState): void {
+    if (this.state === state) return;
+    this.state = state;
+    try {
+      this.options.onStateChange?.(state);
+    } catch {
+      /* never let a listener break the transport */
+    }
   }
 
   /** Number of messages waiting to be delivered. */
@@ -120,7 +131,7 @@ export class DevToolsTransport {
 
   private connect(): void {
     if (this.stopped) return;
-    this.state = this.retry === 0 ? 'connecting' : 'retrying';
+    this.setState(this.retry === 0 ? 'connecting' : 'retrying');
     const url = new URL(this.url);
     url.searchParams.set('projectId', this.options.projectId);
     if (this.options.token) url.searchParams.set('token', this.options.token);
@@ -133,7 +144,7 @@ export class DevToolsTransport {
     }
 
     this.ws.on('open', () => {
-      this.state = 'open';
+      this.setState('open');
       this.retry = 0;
       this.flush();
     });
@@ -155,13 +166,13 @@ export class DevToolsTransport {
     this.ws.on('close', () => {
       this.ws = null;
       if (!this.stopped) this.scheduleRetry();
-      else this.state = 'closed';
+      else this.setState('closed');
     });
   }
 
   private scheduleRetry(): void {
     if (this.stopped) return;
-    this.state = 'retrying';
+    this.setState('retrying');
     const delay = Math.min(30000, 500 * 2 ** Math.min(this.retry, 5)) + Math.random() * 250;
     this.retry += 1;
     this.retryTimer = setTimeout(() => this.connect(), delay);

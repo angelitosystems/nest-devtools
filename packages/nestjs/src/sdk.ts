@@ -5,7 +5,7 @@ import type { ProjectInfo } from '@angelitosystems/devtools-protocol';
 import type { INestApplication } from '@nestjs/common';
 
 import { HttpInstrumentation } from './instrumentation/http';
-import { ConsoleInstrumentation, writeOriginalConsole } from './instrumentation/console';
+import { ConsoleInstrumentation } from './instrumentation/console';
 import { LoggerInstrumentation } from './instrumentation/nest-logger';
 import { ExceptionsInstrumentation, captureError } from './instrumentation/exceptions';
 import { PerformanceInstrumentation } from './instrumentation/performance';
@@ -14,6 +14,7 @@ import { WebsocketInstrumentation } from './instrumentation/websockets';
 import { DatabaseInstrumentation } from './instrumentation/database';
 import { detectNestJsVersion } from './detect';
 import { SDK_VERSION } from './version';
+import { printStartupBanner, printConnectionStatus } from './banner';
 
 /** Result of calling NestDevTools.init(). */
 export interface InitResult {
@@ -68,7 +69,20 @@ export class NestDevTools {
     };
 
     // transport is fully async: a missing server never affects startup
-    coreDevtools.initialize({ config, projectInfo, registerCleanup });
+    let hasWarnedOffline = false;
+    coreDevtools.initialize({
+      config,
+      projectInfo,
+      registerCleanup,
+      onStateChange: (state) => {
+        if (state === 'open') {
+          printConnectionStatus('open', dashboardUrl(config.server));
+        } else if (state === 'retrying' && !hasWarnedOffline) {
+          hasWarnedOffline = true;
+          printConnectionStatus('offline', dashboardUrl(config.server));
+        }
+      },
+    });
 
     const adapter = app.getHttpAdapter();
     const httpReady = Boolean(adapter && ['http', 'express'].includes(adapter.getType()));
@@ -96,9 +110,11 @@ export class NestDevTools {
       registerCleanup(new DatabaseInstrumentation({ config, projectInfo }).attach());
     }
 
-    writeOriginalConsole('log', '[NestJS DevTools] SDK started');
-    writeOriginalConsole('log', `  SDK endpoint: ${config.server}`);
-    writeOriginalConsole('log', `  Dashboard: ${dashboardUrl(config.server)}`);
+    printStartupBanner({
+      endpoint: config.server,
+      dashboard: dashboardUrl(config.server),
+      project: projectInfo.projectName,
+    });
 
     return {
       enabled: true,
