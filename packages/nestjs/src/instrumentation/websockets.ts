@@ -6,7 +6,7 @@ import type {
   GatewayMessagePayload,
 } from '@angelitosystems/devtools-protocol';
 import { requestContext } from '@angelitosystems/devtools-core';
-import { Redactor } from '@angelitosystems/devtools-protocol';
+import { Redactor, randomId } from '@angelitosystems/devtools-protocol';
 import { emit } from '../emitter';
 import { recordSpan } from './timeline';
 
