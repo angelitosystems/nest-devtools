@@ -11,8 +11,10 @@ export class DatabaseInstrumentation {
   private readonly redactor: Redactor;
   private readonly config: DevToolsConfig;
   private readonly projectId: string;
+  private readonly ctx: InstrumentationContext;
 
   constructor(ctx: InstrumentationContext) {
+    this.ctx = ctx;
     this.config = ctx.config;
     this.projectId = ctx.projectInfo.projectId;
     this.redactor = new Redactor({

@@ -54,7 +54,7 @@ export async function main(argv: string[]): Promise<number> {
 }
 
 /** Detect whether the SDK package is resolvable in the current environment. */
-function sdkAvailable(): boolean {
+async function sdkAvailable(): Promise<boolean> {
   try {
     // best-effort: if the module resolves, assume it is usable
     await import('@angelitosystems/nest-devtools');
