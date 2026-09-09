@@ -11,7 +11,9 @@ import type { DevToolsConfig } from '@angelitosystems/devtools-core';
 import type { INestApplication } from '@nestjs/common';
 
 import { emit } from '../emitter';
-import { trackSpans } from './timeline';
+import { recordSpan, trackSpans } from './timeline';
+import { resolveSourceLocation } from '@angelitosystems/devtools-core';
+import { SourceLocation } from '@angelitosystems/devtools-protocol';
 
 /** Shared context every instrumentation module receives. */
 export interface InstrumentationContext {
