@@ -60,13 +60,12 @@ export class QueueEventInstrumentation {
     const requestId = requestContext().requestId();
     emit('log.created', {
       requestId,
-      projectId: options?.source ? undefined : undefined,
+      projectId: undefined,
       level,
       message: `[${queueName}] ${message} (${jobId})`,
       source: options?.source,
       context: queueName,
       processId: process.pid,
-      requestId,
       timestamp: Date.now(),
     } as any);
   }
