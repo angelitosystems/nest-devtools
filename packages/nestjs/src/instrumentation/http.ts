@@ -253,7 +253,8 @@ export class HttpInstrumentation {
 
     for (const rawKey of Object.keys(headers)) {
       const key = rawKey.toLowerCase();
-      if (!RESPONSE_HEADERS.includes(key as typeof RESPONSE_HEADERS[number])) continue;
+      const ok = RESPONSE_HEADERS.some((h) => h.toLowerCase() === key);
+      if (!ok) continue;
       const raw = (headers[rawKey] as string | number | undefined) ?? '';
       const value = String(raw);
       if (value === '') continue;
@@ -318,11 +319,11 @@ function routeFromReq(req: IncomingMessage): string | undefined {
     };
     const route = (req as unknown as Record<string, unknown>).route;
     if (route && typeof route === 'object' && route !== null) {
-      const name = route.name;
+      const name = (route as { name?: unknown }).name;
       if (typeof name === 'string' && name.length > 0) return name;
     }
-    const path = (req as unknown as { baseUrl?: string; path?: string }).baseUrl
-      ?? (req as unknown as { path?: string }).path;
+    const path = (req as unknown as { baseUrl?: string }).baseUrl
+      ?? (req as any).path;
     if (typeof path === 'string' && path.length > 0) return path;
     return undefined;
   } catch {

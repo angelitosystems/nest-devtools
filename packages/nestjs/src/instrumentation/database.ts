@@ -55,13 +55,13 @@ export class DatabaseInstrumentation {
 
       const sub = dataSource.subscriber;
       if (sub) {
-        const before = sub.beforeQuery;
-        const after = sub.afterQuery;
-        sub.beforeQuery = (q, p) => {
+        const before = sub.beforeQuery as ((q: string, p: unknown[]) => void) | undefined;
+        const after = sub.afterQuery as ((q: string, p: unknown[], d: number) => void) | undefined;
+        sub.beforeQuery = (q: string, p: unknown[]) => {
           try { before?.(q, p); } catch {}
           listener.beforeQuery(q, p);
         };
-        sub.afterQuery = (q, p, d) => {
+        sub.afterQuery = (q: string, p: unknown[], d: number) => {
           try { after?.(q, p, d); } catch {}
           listener.afterQuery(q, p, d);
         };
@@ -145,9 +145,9 @@ export class DatabaseInstrumentation {
       const mongoose = this.resolveMongoose(app);
       if (!mongoose) return false;
 
-      const hook = mongoose.plugin((schema: unknown, _name: string) => {
+      const hook = mongoose.plugin((schema: any, _name: string) => {
         if (!schema || typeof schema !== 'object') return;
-        const hooks = (schema as Record<string, unknown>).pre ?? null;
+        const hooks = schema.pre ?? null;
         if (typeof hooks !== 'function') return;
         const originalPre = hooks.bind(schema);
         (schema as Record<string, unknown>).pre = function (method: string, fn: unknown) {
@@ -157,7 +157,9 @@ export class DatabaseInstrumentation {
               const sql = `[Mongoose:${method}]`;
               this.startQuery(sql, args);
               try {
-                const result = await fn.apply(this, args);
+                const handler = fn as ((...args: unknown[]) => unknown) | null;
+                if (!handler) return;
+                const result = await handler.apply(this, args);
                 this.endQuery(sql, args, Date.now() - started);
                 return result;
               } catch (err) {
@@ -241,10 +243,10 @@ export class DatabaseInstrumentation {
 
   private getApp(): any {
     try {
-      const app = this.ctx as any;
-      if (app && typeof app === 'object' && app.app) return app.app;
-      if (app && typeof app === 'object' && app.getHttpAdapter) {
-        return app;
+      const ctxAny = this.ctx as any;
+      if (ctxAny && typeof ctxAny === 'object' && ctxAny.app) return ctxAny.app;
+      if (ctxAny && typeof ctxAny === 'object' && ctxAny.getHttpAdapter) {
+        return ctxAny;
       }
       return null;
     } catch {
