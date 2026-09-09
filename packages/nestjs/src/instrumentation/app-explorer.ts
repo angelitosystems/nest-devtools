@@ -3,6 +3,9 @@ import type { DevToolsConfig } from '@angelitosystems/devtools-core';
 import type { INestApplication } from '@nestjs/common';
 
 import { emit } from '../emitter';
+import { HttpInstrumentation } from './http';
+import { resolveSourceLocation } from '@angelitosystems/devtools-core';
+import { SourceLocation } from '@angelitosystems/devtools-protocol';
 
 interface ContainerNode {
   id: string;
@@ -115,9 +118,9 @@ function extractControllerRoutes(metatype?: Function): string[] {
       const desc = Object.getOwnPropertyDescriptor(proto, key);
       if (!desc?.value) continue;
       const value = desc.value;
-      const handlers = gatherMethodDecorators(value);
-      for (const h of handlers) {
-        if (typeof h === 'string' && h.length > 0) routes.push(h);
+      const routesForMethod = gatherHttpRoutes(value);
+      for (const r of routesForMethod) {
+        if (typeof r === 'string' && r.length > 0) routes.push(r);
       }
     }
     return routes;
@@ -126,19 +129,29 @@ function extractControllerRoutes(metatype?: Function): string[] {
   }
 }
 
-/** Attempt to extract path/method info from a controller method via decorator metadata. */
-function gatherMethodDecorators(value: Function): (string | undefined)[] {
+/** Attempt to extract HTTP routes from a controller method via NestJS decorators. */
+function gatherHttpRoutes(value: Function): (string | undefined)[] {
   try {
-    const entries = Reflect.getMetadata?.('design:type')
-      ? ([] as unknown[])
-      : [];
-    const meta = Reflect.getOwnMetadata?.('nestjs:rejected') ?? null;
+    const decorators = Reflect.getMetadata?.('design:http:method') ?? [];
     const out: (string | undefined)[] = [];
 
-    if (value && typeof value === 'function') {
-      const candidate = value as unknown as { PATH?: string; METHOD?: string };
-      if (typeof candidate.PATH === 'string') out.push(candidate.PATH);
-      if (typeof candidate.METHOD === 'string') out.push(candidate.METHOD?.toLowerCase());
+    if (decorators.length > 0) {
+      for (const d of decorators) {
+        if (d && typeof d === 'object' && (d as any).method && (d as any).path) {
+          out.push(`${String((d as any).method).toUpperCase()} ${String((d as any).path)}`);
+        }
+      }
+    }
+
+    if (typeof value === 'function') {
+      const fn = value as any;
+      const path = fn.PATH ?? undefined;
+      const method = fn.METHOD ?? undefined;
+      if (typeof path === 'string' && typeof method === 'string') {
+        out.push(`${method.toUpperCase()} ${path}`);
+      } else if (typeof path === 'string') {
+        out.push(path);
+      }
     }
 
     return out;
