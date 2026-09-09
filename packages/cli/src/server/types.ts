@@ -1,31 +1,31 @@
-import type {
-  AppSnapshot,
-  ErrorPayload,
-  LogPayload,
-  PerformanceSnapshot,
-  ProjectInfo,
-  QueryPayload,
-  RequestCompletedPayload,
-} from '@angelitosystems/devtools-protocol';
-
-/** A connected or recently seen project. */
 export interface ProjectEntry {
-  info: ProjectInfo;
+  info: {
+    projectId: string;
+    projectName: string;
+    environment: string;
+    hostname: string;
+    port: number | null;
+    pid: number;
+    runtime: string;
+    runtimeVersion: string;
+    nodeVersion: string;
+    nestjsVersion: string | null;
+    sdkVersion: string;
+  };
   connected: boolean;
   lastSeenAt: number;
   connectionCount: number;
 }
 
-/** Runtime status of the DevTools server. */
-export interface ServerStatus {
+export type ServerStatus = {
   running: boolean;
   httpPort: number;
   wsPort: number;
   startedAt: number | null;
   uptimeMs: number;
   projects: ProjectEntry[];
+  dashboardClients: number;
   totalRequests: number;
   totalLogs: number;
   totalErrors: number;
-  dashboardClients: number;
-}
+};

@@ -147,16 +147,34 @@ export class DevToolsServer {
       );
     });
 
-    // Wait for the SDK to send full metadata via project.connected.
-    // Do not synthesize a placeholder or auto-connect examples here.
+    // SDK metadata arrives via project.connected. For now, broadcast a minimal
+    // entry so dashboards can show the project as connected while metadata is pending.
+    const placeholder: ProjectInfo = {
+      projectId,
+      projectName: projectId,
+      environment: 'development',
+      hostname: 'unknown',
+      port: null,
+      pid: 0,
+      runtime: 'node',
+      runtimeVersion: 'unknown',
+      nodeVersion: process.version,
+      nestjsVersion: null,
+      sdkVersion: 'unknown',
+    };
+    this.store.upsertProject(placeholder);
     this.options.onEvent?.('project-connected', { projectId, projectName: projectId });
-    this.broadcastToDashboards(
-      createMessage('project.connected', { projectId, projectName: projectId, environment: 'development', hostname: 'unknown', port: null, pid: 0, runtime: 'node', runtimeVersion: 'unknown', nodeVersion: process.version, nestjsVersion: null, sdkVersion: 'unknown' }, { projectId }),
-    );
-    this.store.upsertProject(
-      { projectId, projectName: projectId, environment: 'development', hostname: 'unknown', port: null, pid: 0, runtime: 'node', runtimeVersion: 'unknown', nodeVersion: process.version, nestjsVersion: null, sdkVersion: 'unknown' },
-    );
-    this.store.markProjectSeen(projectId);
+    this.broadcastToDashboards(createMessage('project.connected', placeholder, { projectId }));
+
+    ws.on('message', (raw) => {
+      const message = parseMessage(raw.toString());
+      if (message?.event === 'project.connected') {
+        const meta = message.payload as ProjectInfo;
+        this.store.upsertProject(meta);
+        this.broadcastToDashboards(createMessage('project.connected', meta, { projectId }));
+      }
+      this.onProjectMessage(ws, projectId, raw.toString());
+    });
   }
 
   private onProjectMessage(ws: WebSocket, projectId: string, raw: string): void {

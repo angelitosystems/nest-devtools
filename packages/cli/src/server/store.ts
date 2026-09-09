@@ -81,6 +81,15 @@ export class DashboardStore {
     });
   }
 
+  /** Mark a project as seen by the dashboard (avoids re-listing stale placeholders). */
+  markProjectSeen(projectId: string): void {
+    const existing = this.projects.get(projectId);
+    if (existing) {
+      existing.connected = true;
+      existing.lastSeenAt = Date.now();
+    }
+  }
+
   /** Mark a project disconnected. */
   disconnectProject(projectId: string, reason?: string): void {
     const project = this.projects.get(projectId);
@@ -89,6 +98,11 @@ export class DashboardStore {
       project.lastSeenAt = Date.now();
     }
     void reason;
+  }
+
+  /** Whether a project is currently considered connected. */
+  isProjectConnected(projectId: string): boolean {
+    return this.projects.get(projectId)?.connected ?? false;
   }
 
   private trackError(projectId: string, payload: ErrorPayload): void {

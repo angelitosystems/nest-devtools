@@ -134,8 +134,8 @@ async function runServer(options: { httpPort: number; wsPort: number; host: stri
     dashboardDir,
     onEvent: (event, data) => {
       if (event === 'project-connected') {
-        const project = data as ProjectInfo;
-        renderer.ok(`SDK connected: ${project.projectName} (${project.projectId})`);
+        const payload = data as { projectId?: string; projectName?: string };
+        renderer.ok(`SDK connected: ${payload.projectName ?? payload.projectId ?? 'unknown'} (${payload.projectId ?? 'unknown'})`);
       } else if (event === 'project-disconnected') {
         const { projectId } = data as { projectId: string };
         renderer.info(`SDK disconnected: ${projectId}`);
@@ -159,10 +159,16 @@ async function runServer(options: { httpPort: number; wsPort: number; host: stri
   renderer.url('Dashboard', `http://localhost:${status.httpPort}`);
   renderer.info(`SDK endpoint: ws://localhost:${status.wsPort}`);
 
+  // Wait briefly so SDK connections have time to arrive if already running.
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
   if (status.projects.length === 0) {
-    renderer.info('Waiting for NestJS apps to connect... (Ctrl+C to stop)');
+    renderer.info('No SDK connections yet. Start your NestJS app with NestDevTools.init(app) and it will appear here.');
   } else {
     renderer.info(`${status.projects.length} project(s) connected`);
+    for (const project of status.projects) {
+      renderer.info(`  - ${project.info.projectName} (${project.info.projectId})`);
+    }
   }
 
   const shutdown = async () => {
