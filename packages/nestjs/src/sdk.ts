@@ -6,6 +6,7 @@ import type { INestApplication } from '@nestjs/common';
 
 import { HttpInstrumentation } from './instrumentation/http';
 import { ConsoleInstrumentation } from './instrumentation/console';
+import { LoggerInstrumentation } from './instrumentation/nest-logger';
 import { ExceptionsInstrumentation, captureError } from './instrumentation/exceptions';
 import { PerformanceInstrumentation } from './instrumentation/performance';
 import { AppExplorer } from './instrumentation/app-explorer';
@@ -74,10 +75,11 @@ export class NestDevTools {
 
     // ---- HTTP instrumentation -------------------------------------------
     const http = new HttpInstrumentation({ config, projectInfo });
-    http.attach(app);
+    registerCleanup(http.attach(app));
 
-    // ---- console + global errors ----------------------------------------
+    // ---- console + NestJS Logger + global errors ------------------------
     registerCleanup(new ConsoleInstrumentation({ config, projectInfo }).attach());
+    registerCleanup(new LoggerInstrumentation({ config, projectInfo }).attach());
     registerCleanup(ExceptionsInstrumentation.attach({ config, projectInfo }));
 
     // ---- performance sampling -------------------------------------------

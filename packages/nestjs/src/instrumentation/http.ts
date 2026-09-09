@@ -33,7 +33,17 @@ const INTERESTING_HEADERS = [
 
 type RequestListener = (req: IncomingMessage, res: ServerResponse) => void;
 
-/** Instrument the HTTP server of a NestJS application. */
+const WRAPPED = Symbol('nest-devtools.wrapped');
+
+/**
+ * Instrument the HTTP server of a NestJS application.
+ *
+ * Covers both bootstrap orders without touching Node module internals:
+ *  - `NestDevTools.init(app)` after `app.listen()`: the server already exists
+ *    and is wrapped immediately.
+ *  - `NestDevTools.init(app)` before `app.listen()` (recommended): `app.listen`
+ *    is wrapped so the server is wrapped the moment it exists.
+ */
 export class HttpInstrumentation {
   private readonly redactor: Redactor;
 
@@ -45,32 +55,65 @@ export class HttpInstrumentation {
     });
   }
 
-  /** Wrap the underlying HTTP server 'request' event. Returns false when not applicable. */
-  attach(app: INestApplication): boolean {
+  /** Begin capturing HTTP requests. Returns a cleanup function. */
+  attach(app: INestApplication): () => void {
     try {
       const adapter = app.getHttpAdapter();
-      if (!adapter || adapter.getType() !== 'http') return false;
+      if (!adapter || adapter.getType() !== 'http') return () => {};
 
-      const server = (adapter as unknown as { getHttpServer?: () => HttpServer }).getHttpServer?.();
-      if (!server) return false;
+      const getServer = (): HttpServer | undefined =>
+        (adapter as unknown as { getHttpServer?: () => HttpServer }).getHttpServer?.();
 
+      // 1) server already exists (init called after listen)
+      const existing = getServer();
+      if (existing) {
+        this.wrapServer(existing);
+        return () => {};
+      }
+
+      // 2) init called before listen: wrap the server once listen() resolves
+      const appLike = app as unknown as { listen: (...args: unknown[]) => unknown };
+      const originalListen = appLike.listen.bind(app);
       const self = this;
-      const originalListeners = server.rawListeners('request') as RequestListener[];
-      server.removeAllListeners('request');
-
-      const wrapped: RequestListener = (req, res) => {
-        self.instrumentRequest(req, res, () => {
-          for (const listener of originalListeners) {
-            listener.call(server, req, res);
-          }
-        });
+      const patchedListen = (...args: unknown[]) => {
+        const result = originalListen(...args);
+        Promise.resolve(result)
+          .then(() => {
+            const server = getServer();
+            if (server) self.wrapServer(server);
+          })
+          .catch(() => {
+            /* listen failed — the app will surface its own error */
+          });
+        return result;
       };
+      appLike.listen = patchedListen;
 
-      server.on('request', wrapped);
-      return true;
+      return () => {
+        appLike.listen = originalListen;
+      };
     } catch {
-      return false;
+      return () => {};
     }
+  }
+
+  /** Wrap the 'request' listeners of a server exactly once. */
+  private wrapServer(server: HttpServer): void {
+    const target = server as unknown as Record<symbol, unknown>;
+    if (target[WRAPPED]) return;
+    target[WRAPPED] = true;
+
+    const self = this;
+    const originalListeners = server.rawListeners('request') as RequestListener[];
+
+    server.removeAllListeners('request');
+    server.on('request', (req, res) => {
+      self.instrumentRequest(req, res, () => {
+        for (const listener of originalListeners) {
+          listener.call(server, req, res);
+        }
+      });
+    });
   }
 
   /** Wrap a single request lifecycle. */
@@ -125,6 +168,8 @@ export class HttpInstrumentation {
       };
       spans.push(responseSpan);
 
+      const errored = res.statusCode >= 500;
+
       const completed: RequestCompletedPayload = {
         requestId,
         projectId: this.ctx.projectInfo.projectId,
@@ -135,10 +180,24 @@ export class HttpInstrumentation {
         startedAt,
         timeline: spans,
         query: parseQuery(rawUrl),
-        errored: res.statusCode >= 500,
+        errored,
       };
 
       emit('request.completed', completed);
+
+      // NestJS exception filters turn controller errors into 5xx responses
+      // without any process-level signal — surface them in the Error Explorer.
+      if (errored) {
+        emit('error.created', {
+          requestId,
+          projectId: this.ctx.projectInfo.projectId,
+          name: 'HttpError',
+          message: `${method} ${url} failed with status ${res.statusCode}`,
+          fingerprint: httpErrorFingerprint(method, url, res.statusCode),
+          request: { method, url, statusCode: res.statusCode },
+          timestamp: finishedAt,
+        });
+      }
     };
 
     const context = requestContext();
@@ -163,6 +222,17 @@ export class HttpInstrumentation {
 function asString(value: string | string[] | undefined): string {
   if (Array.isArray(value)) return value.join(', ');
   return value ?? '';
+}
+
+/** Stable fingerprint for framework-handled HTTP failures. */
+function httpErrorFingerprint(method: string, url: string, statusCode: number): string {
+  const route = url.replace(/\/\d+(?=\/|$)/g, '/:id'); // group /users/15 with /users/16
+  const raw = `${method}::${route}::${statusCode}`;
+  let hash = 0;
+  for (let i = 0; i < raw.length; i++) {
+    hash = (hash * 31 + raw.charCodeAt(i)) >>> 0;
+  }
+  return hash.toString(36).padStart(7, '0');
 }
 
 function safeUrlPath(raw: string): string {
