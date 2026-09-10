@@ -130,4 +130,3 @@ async function connectAsClient(
   );
 }
 
-export { NestDevToolsOptions };
