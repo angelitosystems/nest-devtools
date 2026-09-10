@@ -5,7 +5,11 @@ The repository root contains a launch configuration for this extension. Press `F
 Available commands:
 
 - `NestJS DevTools: Start Server`
-- `NestJS DevTools: Open Dashboard`
+- `NestJS DevTools: Open Dashboard` opens the live dashboard inside VS Code
+- `NestJS DevTools: View Requests`
+- `NestJS DevTools: View Errors`
+- `NestJS DevTools: View Database`
+- `NestJS DevTools: Open Dashboard in Browser` (optional)
 - `NestJS DevTools: Refresh Projects`
 - `NestJS DevTools: Show Status`
 

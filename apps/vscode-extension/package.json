@@ -13,6 +13,10 @@
     "commands": [
       { "command": "nestDevTools.startServer", "title": "NestJS DevTools: Start Server" },
       { "command": "nestDevTools.openDashboard", "title": "NestJS DevTools: Open Dashboard" },
+      { "command": "nestDevTools.openRequests", "title": "NestJS DevTools: View Requests" },
+      { "command": "nestDevTools.openErrors", "title": "NestJS DevTools: View Errors" },
+      { "command": "nestDevTools.openDatabase", "title": "NestJS DevTools: View Database" },
+      { "command": "nestDevTools.openExternal", "title": "NestJS DevTools: Open Dashboard in Browser" },
       { "command": "nestDevTools.refresh", "title": "NestJS DevTools: Refresh Projects" },
       { "command": "nestDevTools.showStatus", "title": "NestJS DevTools: Show Status" }
     ],
