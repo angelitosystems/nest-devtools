@@ -71,10 +71,18 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Package VS Code extension
-        run: bun run package:extension
+        run: |
+          rm -f apps/vscode-extension/*.vsix
+          bun run package:extension
 
       - name: Verify VSIX artifact
-        run: test -s apps/vscode-extension/*.vsix
+        run: |
+          vsix=$(find apps/vscode-extension -maxdepth 1 -type f -name '*.vsix' -size +0c -print -quit)
+          if [ -z "$vsix" ]; then
+            echo "No se encontró un VSIX no vacío"
+            exit 1
+          fi
+          echo "VSIX verificado: $vsix"
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
