@@ -53,7 +53,7 @@ The DevTools server + WebSocket + Dashboard now start **automatically** inside t
 3. In your NestJS `main.ts`:
 
 ```ts
-import { NestDevTools } from '@nests-devtools/sdk'; // or relative path
+import { NestDevTools } from '@angelitosystems/nest-devtools';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -64,7 +64,8 @@ async function bootstrap() {
 }
 ```
 
-4. Remove any separate `nest-devtools start` scripts from your workflow.
+4. No necesitas ejecutar `nest-devtools start` por separado: el dashboard y el WebSocket
+  se inician dentro del proceso de NestJS.
 
 ---
 

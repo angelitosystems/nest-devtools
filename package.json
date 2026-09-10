@@ -13,7 +13,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "bun run --cwd packages/protocol build && bun run --cwd packages/core build && bun run --cwd packages/nestjs build && bun run --cwd packages/cli build && bun run --cwd examples/basic-nestjs build",
+    "build": "bun run --cwd packages/protocol build && bun run --cwd packages/core build && bun run --cwd packages/cli build && bun run --cwd packages/nestjs build && bun run --cwd examples/basic-nestjs build",
     "build:release": "bun run build && bun run --cwd apps/dashboard build && bun run scripts/prepare-publish.ts",
     "test": "bun test packages examples",
     "typecheck": "tsc -p tsconfig.json --noEmit",

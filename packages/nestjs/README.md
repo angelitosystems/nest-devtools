@@ -20,7 +20,7 @@ npm install @angelitosystems/nest-devtools
 bun add @angelitosystems/nest-devtools
 ```
 
-El servidor y el dashboard se instalan aparte con [`@angelitosystems/nest-devtools-cli`](../cli).
+El servidor WebSocket y el dashboard se inician automaticamente dentro del proceso de NestJS.
 
 ## Uso
 
@@ -40,11 +40,8 @@ async function bootstrap() {
 bootstrap();
 ```
 
-Despues inicia el CLI y abre `http://localhost:4317`:
-
-```bash
-npx @angelitosystems/nest-devtools-cli
-```
+Abre `http://localhost:4317` despues de arrancar tu aplicacion. No necesitas ejecutar
+`nest-devtools start` en otra terminal.
 
 ## Configuracion
 
@@ -65,6 +62,9 @@ NestDevTools.init(app, {
   allow: ['publicToken'],
 });
 ```
+
+Para conectar con un servidor DevTools que ya se esta ejecutando, desactiva el modo
+embebido con `embedded: false`.
 
 Opciones y variables de entorno principales:
 
