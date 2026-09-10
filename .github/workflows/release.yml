@@ -45,8 +45,8 @@ jobs:
           fi
           bun scripts/set-version.ts "$VERSION"
 
-      - name: Build packages
-        run: bun run build
+      - name: Build packages and embed dashboard
+        run: bun run build:release
 
       - name: Typecheck
         run: bun run typecheck
@@ -56,12 +56,6 @@ jobs:
 
       - name: End-to-end smoke
         run: bun run e2e
-
-      - name: Build dashboard (for embedding into the CLI package)
-        run: bun run --cwd apps/dashboard build
-
-      - name: Copy dashboard into CLI package for publish
-        run: bun run scripts/prepare-publish.ts
 
       - name: Configure npm auth
         run: |

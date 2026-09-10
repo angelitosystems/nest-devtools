@@ -32,8 +32,8 @@ jobs:
       - name: Set package versions
         run: bun scripts/set-version.ts "${{ github.event.inputs.version }}"
 
-      - name: Build packages
-        run: bun run build
+      - name: Build packages and embed dashboard
+        run: bun run build:release
 
       - name: Typecheck
         run: bun run typecheck
@@ -43,12 +43,6 @@ jobs:
 
       - name: End-to-end smoke
         run: bun run e2e
-
-      - name: Build dashboard for the CLI package
-        run: bun run --cwd apps/dashboard build
-
-      - name: Copy dashboard into the CLI package
-        run: bun run scripts/prepare-publish.ts
 
       - name: Configure npm authentication
         run: |
