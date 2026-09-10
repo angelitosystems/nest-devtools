@@ -28,3 +28,13 @@ for (const name of readdirSync(packagesDir)) {
   writeFileSync(pkgJsonPath, JSON.stringify(pkg, null, 2) + "\n");
   console.log(`✓ ${pkg.name} → ${version}`);
 }
+
+const sdkVersionPath = join(packagesDir, 'nestjs', 'src', 'version.ts');
+if (existsSync(sdkVersionPath)) {
+  writeFileSync(sdkVersionPath, `/** SDK version reported to the DevTools server. Keep in sync with package.json. */\nexport const SDK_VERSION = '${version}';\n`);
+}
+
+const cliVersionPath = join(packagesDir, 'cli', 'src', 'version.ts');
+if (existsSync(cliVersionPath)) {
+  writeFileSync(cliVersionPath, `/** CLI version reported to connected SDKs and dashboards. */\nexport const CLI_VERSION = '${version}';\n`);
+}

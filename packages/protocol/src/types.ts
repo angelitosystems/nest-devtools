@@ -38,6 +38,7 @@ export type DevToolsEventName =
   | 'profile.started'
   | 'profile.completed'
   | 'plugin.event'
+  | 'compatibility.warning'
   // application graph
   | 'app.snapshot'
   // control plane
@@ -65,6 +66,7 @@ export interface DevToolsEventMap {
   'profile.started': ProfileStartedPayload;
   'profile.completed': ProfileCompletedPayload;
   'plugin.event': PluginEventPayload;
+  'compatibility.warning': CompatibilityWarningPayload;
   'app.snapshot': AppSnapshot;
   'client.hello': ClientHello;
   'client.welcome': { serverVersion: string; protocol: typeof PROTOCOL_VERSION };
@@ -271,6 +273,17 @@ export interface PluginEventPayload {
   plugin: string;
   name: string;
   data?: unknown;
+  timestamp: number;
+}
+
+/** Non-blocking version mismatch reported by the local server. */
+export interface CompatibilityWarningPayload {
+  projectId: string;
+  component: 'sdk' | 'cli' | 'protocol';
+  currentVersion: string;
+  requiredVersion: string;
+  message: string;
+  updateCommand: string;
   timestamp: number;
 }
 

@@ -11,6 +11,7 @@ import type {
 } from '@angelitosystems/devtools-protocol';
 import { DashboardStore } from './store';
 import type { ServerStatus } from './types';
+import { CLI_VERSION } from '../version';
 
 export interface DevToolsServerOptions {
   /** Dashboard HTTP port. Default 4317. */
@@ -23,7 +24,7 @@ export interface DevToolsServerOptions {
   dashboardDir?: string;
   /** Called on lifecycle changes for CLI feedback. */
   onEvent?: (
-    event: 'started' | 'project-connected' | 'project-disconnected' | 'dashboard-connected',
+    event: 'started' | 'project-connected' | 'project-disconnected' | 'dashboard-connected' | 'version-mismatch',
     data?: unknown,
   ) => void;
 }
@@ -44,6 +45,7 @@ const PROJECT_EVENTS: DevToolsEventName[] = [
   'profile.started',
   'profile.completed',
   'plugin.event',
+  'compatibility.warning',
   'app.snapshot',
 ];
 
@@ -176,8 +178,34 @@ export class DevToolsServer {
     if (!PROJECT_EVENTS.includes(message.event)) return;
 
     message.projectId = projectId;
+    if (message.event === 'project.connected') {
+      this.checkCompatibility(ws, projectId, message.payload as ProjectInfo);
+    }
     this.store.apply(message, projectId);
     this.forwardToDashboards(message);
+  }
+
+  private checkCompatibility(ws: WebSocket, projectId: string, project: ProjectInfo): void {
+    if (!project.sdkVersion || project.sdkVersion === CLI_VERSION) return;
+    const sdkIsOlder = compareVersions(project.sdkVersion, CLI_VERSION) < 0;
+    const component = sdkIsOlder ? 'sdk' : 'cli';
+    const currentVersion = sdkIsOlder ? project.sdkVersion : CLI_VERSION;
+    const requiredVersion = sdkIsOlder ? CLI_VERSION : project.sdkVersion;
+    const updateCommand = sdkIsOlder
+      ? 'npm install @angelitosystems/nest-devtools@latest'
+      : 'npm install -g @angelitosystems/nest-devtools-cli@latest';
+    const warning = createMessage('compatibility.warning', {
+      projectId,
+      component,
+      currentVersion,
+      requiredVersion,
+      message: `${component.toUpperCase()} ${currentVersion} is older than the required ${requiredVersion}. Update it to keep all DevTools packages aligned.`,
+      updateCommand,
+      timestamp: Date.now(),
+    }, { projectId });
+    safeSend(ws, warning);
+    this.forwardToDashboards(warning);
+    this.options.onEvent?.('version-mismatch', warning.payload);
   }
 
   private onDashboardMessage(ws: WebSocket, raw: string): void {
@@ -212,6 +240,16 @@ export class DevToolsServer {
   private broadcastToDashboards(message: DevToolsMessage): void {
     this.forwardToDashboards(message);
   }
+}
+
+function compareVersions(left: string, right: string): number {
+  const parse = (value: string) => value.replace(/^v/, '').split('.').map((part) => Number.parseInt(part, 10) || 0);
+  const a = parse(left);
+  const b = parse(right);
+  for (let index = 0; index < 3; index += 1) {
+    if ((a[index] ?? 0) !== (b[index] ?? 0)) return (a[index] ?? 0) - (b[index] ?? 0);
+  }
+  return 0;
 }
 
 function placeholderProjectInfo(projectId: string): ProjectInfo {

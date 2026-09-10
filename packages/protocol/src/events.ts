@@ -16,6 +16,7 @@ export const DEVTOOLS_EVENTS = [
   'profile.started',
   'profile.completed',
   'plugin.event',
+  'compatibility.warning',
   'app.snapshot',
   'client.hello',
   'client.welcome',

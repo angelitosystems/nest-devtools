@@ -4,8 +4,8 @@ import { DevToolsServer } from './server/server';
 import { CLIRenderer } from './ui/renderer';
 import { parseArgs, COMMANDS } from './ui/args';
 import type { ProjectInfo } from '@angelitosystems/devtools-protocol';
+import { CLI_VERSION } from './version';
 
-const CLI_VERSION = '0.1.0';
 const DEFAULT_HTTP_PORT = 4317;
 const DEFAULT_WS_PORT = 4318;
 
@@ -139,6 +139,10 @@ async function runServer(options: { httpPort: number; wsPort: number; host: stri
       } else if (event === 'project-disconnected') {
         const { projectId } = data as { projectId: string };
         renderer.info(`SDK disconnected: ${projectId}`);
+      } else if (event === 'version-mismatch') {
+        const warning = data as { message: string; updateCommand: string };
+        renderer.warn(warning.message);
+        renderer.info(`  Actualiza con: ${warning.updateCommand}`);
       }
     },
   });

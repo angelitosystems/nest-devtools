@@ -17,6 +17,7 @@ export default function App() {
   const [section, setSection] = useState<Section>('overview');
   const [snapshot, setSnapshot] = useState<Snapshot>(empty);
   const [connected, setConnected] = useState(false);
+  const [compatibilityWarning, setCompatibilityWarning] = useState<string | undefined>();
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
@@ -25,9 +26,12 @@ export default function App() {
     const load = async () => {
       try {
         const response = await fetch(`${base}/api/state`);
-        const body = await response.json() as { snapshot?: Snapshot };
-        if (alive && body.snapshot) { setSnapshot(normalize(body.snapshot)); setConnected(true); }
-      } catch { if (alive) setConnected(false); }
+        const body = await response.json() as { ok?: boolean; snapshot?: Snapshot | null };
+        if (alive && body.ok === true) {
+          setConnected(true);
+          if (body.snapshot) setSnapshot(normalize(body.snapshot));
+        }
+      } catch { /* the WebSocket can still be connected while HTTP retries */ }
     };
     void load();
     const timer = window.setInterval(load, 2500);
@@ -40,7 +44,12 @@ export default function App() {
       // can reconnect independently without making the whole panel offline.
       socket.onclose = () => undefined;
       socket.onmessage = (event) => {
-        try { applyEvent(JSON.parse(event.data) as { event: string; payload: any }, setSnapshot); } catch { /* ignore malformed event */ }
+        try {
+          setConnected(true);
+          const message = JSON.parse(event.data) as { event: string; payload: any };
+          if (message.event === 'compatibility.warning') setCompatibilityWarning(`${message.payload.message} ${message.payload.updateCommand}`);
+          applyEvent(message, setSnapshot);
+        } catch { /* ignore malformed event */ }
       };
     } catch { /* polling remains available */ }
     return () => { alive = false; window.clearInterval(timer); socket?.close(); };
@@ -68,6 +77,7 @@ export default function App() {
     </header>
     <nav className="tabs">{(['overview', 'requests', 'logs', 'errors', 'database', 'performance'] as Section[]).map((item) => <button className={section === item ? 'active' : ''} onClick={() => setSection(item)} key={item}>{item}</button>)}</nav>
     <main>
+      {compatibilityWarning && <div className="compatibility-warning" style={{ display: 'flex', gap: 12, alignItems: 'center', padding: 12, marginBottom: 12, border: '1px solid var(--vscode-editorWarning-foreground)', borderRadius: 8, color: 'var(--vscode-editorWarning-foreground)' }}><b>Update recommended</b><span style={{ flex: 1 }}>{compatibilityWarning}</span><button onClick={() => setCompatibilityWarning(undefined)}>Dismiss</button></div>}
       {section === 'overview' && <Overview snapshot={snapshot} performance={latestPerformance} series={requestSeries} onNavigate={setSection} />}
       {section === 'requests' && <DataTable title="Requests" columns={['Method', 'URL', 'Status', 'Duration']} rows={visible.requests.slice(-100).reverse().map((item) => [item.method, item.url, String(item.statusCode), `${item.duration} ms`])} filter={filter} onFilter={setFilter} />}
       {section === 'logs' && <DataTable title="Logs" columns={['Level', 'Message', 'Time']} rows={visible.logs.slice(-100).reverse().map((item) => [item.level, item.message, time(item.timestamp)])} filter={filter} onFilter={setFilter} />}
