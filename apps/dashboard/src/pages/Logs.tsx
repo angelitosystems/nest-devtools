@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pause, Play, Search, Trash2 } from 'lucide-react';
 import type { DevToolsState } from '../store/store';
 import { cn, formatTime, levelColor } from '../lib/utils';
+import { EmptyState } from '../components/ui';
 
 const LEVELS = ['all', 'debug', 'info', 'warn', 'error'] as const;
 
@@ -16,7 +17,6 @@ export default function LogsPage({ store }: { store: DevToolsState }) {
   latest.current = store.logs;
   const [visible, setVisible] = useState<DevToolsState['logs']>([]);
 
-  // when paused, freeze the visible list
   useEffect(() => {
     if (!paused) setVisible(store.logs);
   }, [store.logs, paused]);
@@ -35,19 +35,19 @@ export default function LogsPage({ store }: { store: DevToolsState }) {
   }, [store.logs]);
 
   return (
-    <div className="flex flex-col h-full min-h-0 gap-3">
+    <div className="flex h-full min-h-0 flex-col gap-3">
       <div className="flex items-center gap-2">
-        <div className="flex bg-surface-850 border border-surface-600 rounded-md overflow-hidden">
+        <div className="flex overflow-hidden rounded-md border border-surface-600 bg-surface-850">
           {LEVELS.map((option) => (
             <button
               key={option}
               onClick={() => setLevel(option)}
               className={cn(
-                'px-3 py-1.5 text-xs uppercase tracking-wide',
+                'px-3 py-1.5 text-xs uppercase tracking-wide transition-colors',
                 level === option ? 'bg-accent-600 text-white' : 'text-slate-400 hover:text-slate-200',
               )}
             >
-              {option} <span className="text-slate-500">{counts[option] ?? 0}</span>
+              {option} <span className={level === option ? 'text-white/70' : 'text-slate-500'}>{counts[option] ?? 0}</span>
             </button>
           ))}
         </div>
@@ -57,34 +57,37 @@ export default function LogsPage({ store }: { store: DevToolsState }) {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search logs…"
-            className="w-full bg-surface-850 border border-surface-600 rounded-md pl-9 pr-3 py-2 text-sm font-mono focus:outline-none focus:border-accent-500"
+            className="w-full rounded-md border border-surface-600 bg-surface-850 py-2 pl-9 pr-3 text-sm font-mono focus:border-accent-500 focus:outline-none"
           />
         </div>
         <button
           onClick={() => setPaused((p) => !p)}
-          className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md bg-surface-850 border border-surface-600 hover:bg-surface-700"
+          className={cn(
+            'flex items-center gap-1.5 rounded-md border border-surface-600 px-3 py-2 text-xs transition-colors',
+            paused ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' : 'bg-surface-850 hover:bg-surface-700 text-slate-300',
+          )}
         >
           {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
           {paused ? 'Resume' : 'Pause'}
         </button>
         <button
           onClick={() => store.clear('logs')}
-          className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md bg-surface-850 border border-surface-600 hover:bg-surface-700 text-slate-300"
+          className="flex items-center gap-1.5 rounded-md border border-surface-600 bg-surface-850 px-3 py-2 text-xs text-slate-300 hover:bg-surface-700"
         >
           <Trash2 className="h-3.5 w-3.5" /> Clear
         </button>
       </div>
 
-      <div className="bg-surface-850 border border-surface-600 rounded-lg flex-1 overflow-auto font-mono text-xs">
+      <div className="flex-1 overflow-auto rounded-lg border border-surface-600 bg-surface-850 font-mono text-xs">
         {filtered.length === 0 ? (
-          <div className="p-10 text-center text-slate-500">No logs match the current filters.</div>
+          <EmptyState title="No logs match the current filters" />
         ) : (
           <ul className="divide-y divide-surface-700">
             {filtered.slice(0, 500).map((log, index) => (
-              <li key={`${log.timestamp}-${index}`} className="px-4 py-1.5 flex items-start gap-3 hover:bg-surface-800">
-                <span className="text-slate-600 shrink-0">{formatTime(log.timestamp)}</span>
-                <span className={cn('uppercase w-10 shrink-0', levelColor(log.level))}>{log.level}</span>
-                <span className="text-slate-300 break-all">
+              <li key={`${log.timestamp}-${index}`} className="flex items-start gap-3 px-4 py-1.5 hover:bg-surface-800">
+                <span className="shrink-0 text-slate-600">{formatTime(log.timestamp)}</span>
+                <span className={cn('w-10 shrink-0 uppercase', levelColor(log.level))}>{log.level}</span>
+                <span className="break-all text-slate-300">
                   {log.message}
                   {log.source && (
                     <span className="text-slate-600">

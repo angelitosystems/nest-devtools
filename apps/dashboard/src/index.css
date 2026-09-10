@@ -6,8 +6,22 @@ html,
 body,
 #root {
   height: 100%;
-  background-color: #0b0f17;
-  color: #e2e8f0;
+  background-color: #08090d;
+  color: #e7e9ee;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: rgba(230, 52, 98, 0.35);
+  color: #fff;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #262c3a transparent;
 }
 
 ::-webkit-scrollbar {
@@ -18,9 +32,33 @@ body,
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #263144;
+  background: #262c3a;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #38bdf8;
+  background: #e63462;
+}
+
+/* Keep focus visible for keyboard users without adding a ring to every
+   mouse click — the app is dense with interactive rows. */
+:focus-visible {
+  outline: 2px solid #e63462;
+  outline-offset: 1px;
+}
+
+/* Drag handle between list/detail panes. */
+.pane-resizer {
+  position: relative;
+  flex: 0 0 1px;
+  background: #1c212d;
+  cursor: col-resize;
+}
+.pane-resizer::after {
+  content: '';
+  position: absolute;
+  inset: 0 -4px;
+}
+.pane-resizer:hover,
+.pane-resizer.active {
+  background: #e63462;
 }

@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
 import { AlertTriangle, ArrowUpRight, ScrollText, Radio } from 'lucide-react';
 import type { DevToolsState } from '../store/store';
-import { cn, formatDuration, formatTime, levelColor, statusColor } from '../lib/utils';
+import { cn, formatDuration, formatTime, levelColor } from '../lib/utils';
+import { EmptyState, MethodBadge, StatusChip } from '../components/ui';
 
 export default function OverviewPage({
   store,
@@ -15,7 +15,6 @@ export default function OverviewPage({
 
   return (
     <div className="space-y-4">
-      {/* stat cards */}
       <div className="grid grid-cols-4 gap-3">
         <StatCard label="Requests" value={String(store.requests.length)} onClick={() => onNavigate('requests')} />
         <StatCard label="Logs" value={String(store.logs.length)} onClick={() => onNavigate('logs')} />
@@ -27,7 +26,6 @@ export default function OverviewPage({
         />
       </div>
 
-      {/* live feeds */}
       <div className="grid grid-cols-2 gap-4">
         <Panel
           title="Requests"
@@ -76,14 +74,16 @@ function StatCard({
   return (
     <button
       onClick={onClick}
-      className="bg-surface-850 border border-surface-600 rounded-lg p-4 text-left hover:border-accent-500 transition-colors"
+      className="rounded-lg border border-surface-600 bg-surface-850 p-4 text-left transition-colors hover:border-accent-500/60"
     >
       <div className="text-[11px] uppercase tracking-wider text-slate-500">{label}</div>
-      <div className={cn('mt-1 text-2xl font-semibold', tone === 'danger' ? 'text-rose-400' : 'text-slate-100')}>
-        {value}
-      </div>
+      <div className={cn('mt-1 text-2xl font-semibold', tone === 'danger' && errorTone(value))}>{value}</div>
     </button>
   );
+}
+
+function errorTone(value: string): string {
+  return value !== '0' ? 'text-rose-400' : 'text-slate-100';
 }
 
 function Panel({
@@ -102,13 +102,13 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-surface-850 border border-surface-600 rounded-lg overflow-hidden">
-      <header className="flex items-center gap-2 px-4 h-10 border-b border-surface-700 bg-surface-900/60">
+    <section className="overflow-hidden rounded-lg border border-surface-600 bg-surface-850">
+      <header className="flex h-10 items-center gap-2 border-b border-surface-700 bg-surface-900/60 px-4">
         {icon}
         <h2 className="text-sm font-medium">{title}</h2>
         {count !== undefined && <span className="text-[11px] text-slate-500">{count}</span>}
         {action && (
-          <button onClick={onAction} className="ml-auto text-xs text-accent-400 hover:underline flex items-center gap-0.5">
+          <button onClick={onAction} className="ml-auto flex items-center gap-0.5 text-xs text-accent-400 hover:underline">
             {action}
             <ArrowUpRight className="h-3 w-3" />
           </button>
@@ -120,15 +120,15 @@ function Panel({
 }
 
 function RequestFeed({ requests }: { requests: DevToolsState['requests'] }) {
-  if (requests.length === 0) return <Empty text="No requests captured yet" />;
+  if (requests.length === 0) return <EmptyState title="No requests captured yet" />;
   return (
     <ul className="divide-y divide-surface-700 font-mono text-xs">
       {requests.map((request) => (
         <li key={request.requestId} className="flex items-center gap-3 px-4 py-2">
-          <span className="text-accent-400 w-14 shrink-0">{request.method}</span>
-          <span className="text-slate-200 truncate flex-1">{request.url}</span>
-          <span className={statusColor(request.statusCode)}>{request.statusCode}</span>
-          <span className="text-slate-500 w-14 text-right">{formatDuration(request.duration)}</span>
+          <MethodBadge method={request.method} />
+          <span className="flex-1 truncate text-slate-200">{request.url}</span>
+          <StatusChip status={request.statusCode} />
+          <span className="w-14 text-right text-slate-500">{formatDuration(request.duration)}</span>
         </li>
       ))}
     </ul>
@@ -136,14 +136,14 @@ function RequestFeed({ requests }: { requests: DevToolsState['requests'] }) {
 }
 
 function LogFeed({ logs }: { logs: DevToolsState['logs'] }) {
-  if (logs.length === 0) return <Empty text="No logs captured yet" />;
+  if (logs.length === 0) return <EmptyState title="No logs captured yet" />;
   return (
     <ul className="divide-y divide-surface-700 font-mono text-xs">
       {logs.map((log, index) => (
         <li key={`${log.timestamp}-${index}`} className="flex items-center gap-2 px-4 py-2">
           <span className="text-slate-600">{formatTime(log.timestamp)}</span>
-          <span className={cn('uppercase w-10', levelColor(log.level))}>{log.level}</span>
-          <span className="text-slate-300 truncate flex-1">{log.message}</span>
+          <span className={cn('w-10 uppercase', levelColor(log.level))}>{log.level}</span>
+          <span className="flex-1 truncate text-slate-300">{log.message}</span>
         </li>
       ))}
     </ul>
@@ -151,20 +151,16 @@ function LogFeed({ logs }: { logs: DevToolsState['logs'] }) {
 }
 
 function ErrorSummary({ groups }: { groups: DevToolsState['errorGroups'] }) {
-  if (groups.length === 0) return <Empty text="No errors — happy days" />;
+  if (groups.length === 0) return <EmptyState title="No errors — happy days" />;
   return (
     <ul className="divide-y divide-surface-700 font-mono text-xs">
       {groups.map((group) => (
         <li key={group.fingerprint} className="flex items-center gap-3 px-4 py-2">
-          <span className="text-rose-400 w-24 shrink-0 truncate">{group.sample.name}</span>
-          <span className="text-slate-300 truncate flex-1">{group.sample.message}</span>
+          <span className="w-24 shrink-0 truncate text-rose-400">{group.sample.name}</span>
+          <span className="flex-1 truncate text-slate-300">{group.sample.message}</span>
           <span className="text-slate-500">×{group.count}</span>
         </li>
       ))}
     </ul>
   );
-}
-
-function Empty({ text }: { text: string }) {
-  return <div className="px-4 py-10 text-center text-sm text-slate-500">{text}</div>;
 }
