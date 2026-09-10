@@ -278,6 +278,8 @@ export interface StateSnapshot {
   logs: LogPayload[];
   errors: ErrorPayload[];
   queries: QueryPayload[];
+  websocketConnections: GatewayConnectionPayload[];
+  websocketMessages: GatewayMessagePayload[];
   performance: Record<string, PerformanceSnapshot>;
   apps: Record<string, AppSnapshot>;
 }

@@ -2,6 +2,8 @@ import type {
   AppSnapshot,
   DevToolsMessage,
   ErrorPayload,
+  GatewayConnectionPayload,
+  GatewayMessagePayload,
   LogPayload,
   PerformanceSnapshot,
   ProjectInfo,
@@ -18,6 +20,7 @@ export const LIMITS = {
   logs: 5000,
   errors: 1000,
   queries: 2000,
+  websocketEvents: 2000,
   performancePoints: 240,
 } as const;
 
@@ -28,6 +31,8 @@ export class DashboardStore {
   private readonly logs = new Map<string, LogPayload[]>();
   private readonly errors = new Map<string, ErrorPayload[]>();
   private readonly queries = new Map<string, QueryPayload[]>();
+  private readonly websocketConnections = new Map<string, GatewayConnectionPayload[]>();
+  private readonly websocketMessages = new Map<string, GatewayMessagePayload[]>();
   private readonly performance = new Map<string, PerformanceSnapshot[]>();
   private readonly apps = new Map<string, AppSnapshot>();
 
@@ -57,6 +62,12 @@ export class DashboardStore {
         break;
       case 'query.executed':
         this.push(this.queries, projectId, message.payload as QueryPayload, LIMITS.queries);
+        break;
+      case 'websocket.connected':
+        this.push(this.websocketConnections, projectId, message.payload as GatewayConnectionPayload, LIMITS.websocketEvents);
+        break;
+      case 'websocket.message':
+        this.push(this.websocketMessages, projectId, message.payload as GatewayMessagePayload, LIMITS.websocketEvents);
         break;
       case 'performance.updated': {
         const snapshot = message.payload as PerformanceSnapshot;
@@ -142,6 +153,8 @@ export class DashboardStore {
       logs: flat(this.logs).slice(-LIMITS.logs),
       errors: flat(this.errors).slice(-LIMITS.errors),
       queries: flat(this.queries).slice(-LIMITS.queries),
+      websocketConnections: flat(this.websocketConnections).slice(-LIMITS.websocketEvents),
+      websocketMessages: flat(this.websocketMessages).slice(-LIMITS.websocketEvents),
       performance: Object.fromEntries(
         [...this.performance.entries()].map(([projectId, points]) => [projectId, points[points.length - 1]]),
       ),

@@ -131,7 +131,26 @@ function RequestDetail({ request }: { request: RequestCompletedPayload }) {
           </pre>
         </section>
       )}
+
+      {request.headers && Object.keys(request.headers).length > 0 && (
+        <JsonSection title="Response headers" value={request.headers} />
+      )}
+      {request.requestBody !== undefined && <JsonSection title="Request body" value={request.requestBody} />}
+      {(request.responseBody !== undefined || request.responsePreview) && (
+        <JsonSection title="Response" value={request.responseBody ?? request.responsePreview} />
+      )}
     </aside>
+  );
+}
+
+function JsonSection({ title, value }: { title: string; value: unknown }) {
+  return (
+    <section className="px-4 pb-4">
+      <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-2">{title}</h3>
+      <pre className="text-[11px] font-mono bg-surface-900 rounded p-2 overflow-auto text-slate-300 whitespace-pre-wrap break-all">
+        {typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
+      </pre>
+    </section>
   );
 }
 

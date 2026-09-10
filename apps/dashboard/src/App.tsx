@@ -20,12 +20,16 @@ import LogsPage from './pages/Logs';
 import ErrorsPage from './pages/Errors';
 import PerformancePage from './pages/Performance';
 import ApplicationPage from './pages/Application';
+import DatabasePage from './pages/Database';
+import WebSocketsPage from './pages/WebSockets';
 
 type PageId =
   | 'overview'
   | 'requests'
   | 'logs'
   | 'errors'
+  | 'database'
+  | 'websockets'
   | 'performance'
   | 'modules'
   | 'controllers'
@@ -49,6 +53,8 @@ const NAV: Array<{ section: string; items: NavItem[] }> = [
       { id: 'logs', label: 'Logs', icon: ScrollText },
       { id: 'errors', label: 'Errors', icon: AlertTriangle },
       { id: 'performance', label: 'Performance', icon: Gauge },
+      { id: 'database', label: 'Database', icon: Database },
+      { id: 'websockets', label: 'WebSockets', icon: Activity },
     ],
   },
   {
@@ -74,6 +80,9 @@ export default function App() {
       requests: byProject(store.requests),
       logs: byProject(store.logs),
       errors: byProject(store.errors),
+      queries: byProject(store.queries),
+      websocketConnections: byProject(store.websocketConnections),
+      websocketMessages: byProject(store.websocketMessages),
     };
   }, [store, projectFilter]);
 
@@ -94,6 +103,8 @@ export default function App() {
           {page === 'logs' && <LogsPage store={filtered} />}
           {page === 'errors' && <ErrorsPage store={filtered} />}
           {page === 'performance' && <PerformancePage store={filtered} />}
+          {page === 'database' && <DatabasePage store={filtered} />}
+          {page === 'websockets' && <WebSocketsPage store={filtered} />}
           {(page === 'modules' || page === 'controllers' || page === 'providers') && (
             <ApplicationPage store={filtered} focus={page} />
           )}
@@ -133,13 +144,6 @@ function Sidebar({ page, onNavigate }: { page: PageId; onNavigate: (page: PageId
             ))}
           </div>
         ))}
-        <div className="px-4 pt-3 pb-1 text-[10px] uppercase tracking-widest text-slate-500">Coming soon</div>
-        <div className="px-4 py-1 flex items-center gap-2.5 text-sm text-slate-600">
-          <Database className="h-4 w-4" /> Database
-        </div>
-        <div className="px-4 py-1 flex items-center gap-2.5 text-sm text-slate-600">
-          <Activity className="h-4 w-4" /> WebSockets
-        </div>
       </nav>
       <div className="px-4 py-3 text-[11px] text-slate-600 border-t border-surface-600">v0.1.0 · MVP</div>
     </aside>

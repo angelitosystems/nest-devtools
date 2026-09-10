@@ -3,9 +3,12 @@ import type {
   AppSnapshot,
   DevToolsMessage,
   ErrorPayload,
+  GatewayConnectionPayload,
+  GatewayMessagePayload,
   LogPayload,
   PerformanceSnapshot,
   ProjectInfo,
+  QueryPayload,
   RequestCompletedPayload,
 } from '@angelitosystems/devtools-protocol';
 import { DevToolsConnection, resolveWsUrl } from './connection';
@@ -14,6 +17,8 @@ const CAPS = {
   requests: 500,
   logs: 2000,
   errors: 500,
+  queries: 2000,
+  websocketEvents: 2000,
 };
 
 /** Reactive view of the live DevTools stream. */
@@ -23,10 +28,13 @@ export interface DevToolsState {
   requests: RequestCompletedPayload[];
   logs: LogPayload[];
   errors: ErrorPayload[];
+  queries: QueryPayload[];
+  websocketConnections: GatewayConnectionPayload[];
+  websocketMessages: GatewayMessagePayload[];
   performance: Record<string, PerformanceSnapshot>;
   apps: Record<string, AppSnapshot>;
   errorGroups: Array<{ fingerprint: string; count: number; sample: ErrorPayload; projectId: string }>;
-  clear: (scope: 'logs' | 'requests' | 'errors' | 'all') => void;
+  clear: (scope: 'logs' | 'requests' | 'errors' | 'queries' | 'all') => void;
 }
 
 /** Maintain and expose the live DevTools state as React state. */
@@ -36,14 +44,20 @@ export function useDevToolsStore(): DevToolsState {
     requests: RequestCompletedPayload[];
     logs: LogPayload[];
     errors: ErrorPayload[];
+    queries: QueryPayload[];
+    websocketConnections: GatewayConnectionPayload[];
+    websocketMessages: GatewayMessagePayload[];
     errorCounts: Map<string, { count: number; sample: ErrorPayload; projectId: string }>;
-  }>({ connection: null, requests: [], logs: [], errors: [], errorCounts: new Map() });
+  }>({ connection: null, requests: [], logs: [], errors: [], queries: [], websocketConnections: [], websocketMessages: [], errorCounts: new Map() });
 
   const [connectionState, setConnectionState] = useState<'connecting' | 'open' | 'closed'>('connecting');
   const [projects, setProjects] = useState<ProjectInfo[]>([]);
   const [requests, setRequests] = useState<RequestCompletedPayload[]>([]);
   const [logs, setLogs] = useState<LogPayload[]>([]);
   const [errors, setErrors] = useState<ErrorPayload[]>([]);
+  const [queries, setQueries] = useState<QueryPayload[]>([]);
+  const [websocketConnections, setWebsocketConnections] = useState<GatewayConnectionPayload[]>([]);
+  const [websocketMessages, setWebsocketMessages] = useState<GatewayMessagePayload[]>([]);
   const [performance, setPerformance] = useState<Record<string, PerformanceSnapshot>>({});
   const [apps, setApps] = useState<Record<string, AppSnapshot>>({});
   const [errorGroups, setErrorGroups] = useState<DevToolsState['errorGroups']>([]);
@@ -64,6 +78,9 @@ export function useDevToolsStore(): DevToolsState {
             requests: RequestCompletedPayload[];
             logs: LogPayload[];
             errors: ErrorPayload[];
+            queries: QueryPayload[];
+            websocketConnections: GatewayConnectionPayload[];
+            websocketMessages: GatewayMessagePayload[];
             performance: Record<string, PerformanceSnapshot>;
             apps: Record<string, AppSnapshot>;
           };
@@ -73,6 +90,12 @@ export function useDevToolsStore(): DevToolsState {
           setRequests(cache.requests);
           setLogs(cache.logs);
           setErrors(cache.errors);
+          cache.queries = [...(snapshot.queries ?? [])];
+          cache.websocketConnections = [...(snapshot.websocketConnections ?? [])];
+          cache.websocketMessages = [...(snapshot.websocketMessages ?? [])];
+          setQueries(cache.queries);
+          setWebsocketConnections(cache.websocketConnections);
+          setWebsocketMessages(cache.websocketMessages);
           setProjects(snapshot.projects ?? []);
           setPerformance(snapshot.performance ?? {});
           setApps(snapshot.apps ?? {});
@@ -127,6 +150,27 @@ export function useDevToolsStore(): DevToolsState {
           rebuildErrorGroups(cache, setErrorGroups);
           break;
         }
+        case 'query.executed': {
+          const payload = message.payload as QueryPayload;
+          cache.queries.push(payload);
+          if (cache.queries.length > CAPS.queries) cache.queries.shift();
+          setQueries([...cache.queries]);
+          break;
+        }
+        case 'websocket.connected': {
+          const payload = message.payload as GatewayConnectionPayload;
+          cache.websocketConnections.push(payload);
+          if (cache.websocketConnections.length > CAPS.websocketEvents) cache.websocketConnections.shift();
+          setWebsocketConnections([...cache.websocketConnections]);
+          break;
+        }
+        case 'websocket.message': {
+          const payload = message.payload as GatewayMessagePayload;
+          cache.websocketMessages.push(payload);
+          if (cache.websocketMessages.length > CAPS.websocketEvents) cache.websocketMessages.shift();
+          setWebsocketMessages([...cache.websocketMessages]);
+          break;
+        }
         case 'performance.updated': {
           const payload = message.payload as PerformanceSnapshot;
           setPerformance((prev) => ({ ...prev, [payload.projectId]: payload }));
@@ -135,11 +179,6 @@ export function useDevToolsStore(): DevToolsState {
         case 'app.snapshot': {
           const payload = message.payload as AppSnapshot;
           setApps((prev) => ({ ...prev, [payload.projectId]: payload }));
-          break;
-        }
-        case 'project.disconnected': {
-          const payload = message.payload as { projectId: string };
-          setProjects((prev) => prev.filter((p) => p.projectId !== payload.projectId));
           break;
         }
         default:
@@ -157,12 +196,12 @@ export function useDevToolsStore(): DevToolsState {
     };
   }, []);
 
-  const clear = (scope: 'logs' | 'requests' | 'errors' | 'all') => {
+  const clear = (scope: 'logs' | 'requests' | 'errors' | 'queries' | 'all') => {
     ref.current.connection?.send('state.clear', { scope });
   };
 
   void tick; // tick forces rerenders alongside state setters
-  return { connectionState, projects, requests, logs, errors, performance, apps, errorGroups, clear };
+  return { connectionState, projects, requests, logs, errors, queries, websocketConnections, websocketMessages, performance, apps, errorGroups, clear };
 }
 
 function rebuildErrorGroups(
