@@ -1,5 +1,5 @@
 import type { DevToolsEventMap, DevToolsEventName, DevToolsMessage } from './types';
-import { PROTOCOL_VERSION } from './types';
+import { MIN_SUPPORTED_PROTOCOL_VERSION, PROTOCOL_VERSION } from './types';
 
 /** Const array of every event name (runtime mirror of the type union). */
 export const DEVTOOLS_EVENTS = [
@@ -13,6 +13,9 @@ export const DEVTOOLS_EVENTS = [
   'websocket.connected',
   'websocket.message',
   'performance.updated',
+  'profile.started',
+  'profile.completed',
+  'plugin.event',
   'app.snapshot',
   'client.hello',
   'client.welcome',
@@ -63,6 +66,10 @@ export function parseMessage(raw: string): DevToolsMessage | null {
       parsed !== null &&
       'event' in parsed &&
       'payload' in parsed &&
+      'v' in parsed &&
+      Number((parsed as { v: unknown }).v) === PROTOCOL_VERSION &&
+      typeof (parsed as { id?: unknown }).id === 'string' &&
+      typeof (parsed as { ts?: unknown }).ts === 'number' &&
       isDevToolsEventName(String((parsed as { event: unknown }).event))
     ) {
       return parsed as DevToolsMessage;
@@ -71,4 +78,9 @@ export function parseMessage(raw: string): DevToolsMessage | null {
   } catch {
     return null;
   }
+}
+
+/** True when a peer can safely communicate with this package. */
+export function isSupportedProtocolVersion(version: number): boolean {
+  return Number.isInteger(version) && version >= MIN_SUPPORTED_PROTOCOL_VERSION && version <= PROTOCOL_VERSION;
 }

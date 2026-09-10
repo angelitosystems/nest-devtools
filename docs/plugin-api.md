@@ -74,12 +74,11 @@ cursorUrl({ absolutePath: '/api/src/users.service.ts', line: 87 });
 // 'cursor://file/api/src/users.service.ts:87:1'
 ```
 
-## Coming in v1.0: formal plugins
+## Formal plugins
 
 The stabilized surface will let packages register collectors without touching internals:
 
 ```ts
-// sketch — not yet implemented
 NestDevTools.init(app, {
   plugins: [
     myPrismaCollector(),     // hooks lifecycle: init, attach, dispose
@@ -93,10 +92,23 @@ A plugin will implement:
 ```ts
 interface DevToolsPlugin {
   name: string;
-  onInit(ctx: PluginContext): void | Promise<void>;  // config + transport access
-  onAttach(app: INestApplication): void;             // hook the app
-  onDispose?(): void;                                // restore everything
+  onInit(ctx: PluginContext): void | Promise<void>;
+  onAttach(app: INestApplication, ctx: PluginContext): void | (() => void) | Promise<void | (() => void)>;
+  onDispose?(): void | Promise<void>;
 }
+```
+
+Plugins are now supported by the SDK. `ctx.emit()` uses the typed protocol and `ctx.custom()` emits a namespaced `plugin.event`; payloads are redacted before transport. A failing plugin is reported as a DevTools log and is isolated from NestJS startup.
+
+```ts
+const metricsPlugin: DevToolsPlugin = {
+  name: 'metrics-plugin',
+  onAttach(_app, ctx) {
+    ctx.custom('ready', { collector: 'metrics' });
+    return () => ctx.custom('stopped');
+  },
+};
+NestDevTools.init(app, { plugins: [metricsPlugin] });
 ```
 
 Rules that will not change:

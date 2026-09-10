@@ -13,3 +13,5 @@ export * from './transport';
 export * from './metrics';
 export * from './instrumentation';
 export * from './devtools';
+export * from './profiling';
+export * from './opentelemetry';

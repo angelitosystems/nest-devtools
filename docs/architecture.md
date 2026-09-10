@@ -51,7 +51,7 @@ interface DevToolsMessage<T> {
 }
 ```
 
-Events (v1): `project.connected` · `project.disconnected` · `request.started` · `request.completed` · `log.created` · `error.created` · `query.executed` (reserved) · `websocket.*` (reserved) · `performance.updated` · `app.snapshot` · control plane (`client.hello`, `state.snapshot`, `state.clear`, `stream.pause/resume`, …).
+Events (v1): `project.connected` · `project.disconnected` · `request.started` · `request.completed` · `log.created` · `error.created` · `query.executed` · `websocket.*` · `performance.updated` · `profile.*` · `plugin.event` · `app.snapshot` · control plane (`client.hello`, `state.snapshot`, `state.clear`, `stream.pause/resume`, …). Frames require a version, id, timestamp and known event name; unknown protocol versions are rejected.
 
 The full type map lives in [`packages/protocol/src/types.ts`](../packages/protocol/src/types.ts).
 
@@ -95,6 +95,13 @@ The server is a thin hub:
 - replays a full `state.snapshot` to newly connected dashboards.
 
 Everything is in-memory; there is no database by design (MVP scope).
+
+## Advanced integrations
+
+- **Plugins**: `NestDevTools.init(app, { plugins })` provides lifecycle hooks, typed event emission, redaction and cleanup isolation.
+- **Profiling**: `NestDevTools.startProfile('cpu' | 'heap')` and `stopProfile()` use Node's inspector only on demand and publish `profile.*` events.
+- **OpenTelemetry**: set `openTelemetry: { endpoint: 'http://localhost:4318' }` to export redacted OTLP/HTTP logs without adding a mandatory SDK dependency.
+- **VS Code**: `apps/vscode-extension` adds a project tree, server controls, status bar and dashboard command. Build it with `bun run build:extension` and package it with `npm run package` from that folder.
 
 ## Testing strategy
 

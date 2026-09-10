@@ -1,0 +1,61 @@
+{
+  "name": "nest-devtools-vscode",
+  "displayName": "NestJS DevTools",
+  "description": "Inspect NestJS DevTools projects, telemetry and profiling from VS Code.",
+  "version": "0.1.0",
+  "publisher": "angelitosystems",
+  "license": "MIT",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "nestDevTools.startServer", "title": "NestJS DevTools: Start Server" },
+      { "command": "nestDevTools.openDashboard", "title": "NestJS DevTools: Open Dashboard" },
+      { "command": "nestDevTools.refresh", "title": "NestJS DevTools: Refresh Projects" },
+      { "command": "nestDevTools.showStatus", "title": "NestJS DevTools: Show Status" }
+    ],
+    "views": {
+      "explorer": [
+        { "id": "nestDevTools.projects", "name": "NestJS DevTools", "icon": "$(server-environment)" }
+      ]
+    },
+    "configuration": {
+      "title": "NestJS DevTools",
+      "properties": {
+        "nestDevTools.serverUrl": {
+          "type": "string",
+          "default": "http://localhost:4317",
+          "description": "HTTP URL of the local NestJS DevTools server."
+        },
+        "nestDevTools.cliCommand": {
+          "type": "string",
+          "default": "npx nest-devtools start",
+          "description": "Command used by Start Server."
+        },
+        "nestDevTools.refreshInterval": {
+          "type": "number",
+          "default": 5000,
+          "minimum": 1000,
+          "description": "Project refresh interval in milliseconds."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch",
+    "vscode:prepublish": "npm run compile",
+    "package": "npm run compile && npx @vscode/vsce package"
+  },
+  "dependencies": {
+    "@angelitosystems/devtools-protocol": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.7.0",
+    "@vscode/vsce": "^3.2.1"
+  }
+}

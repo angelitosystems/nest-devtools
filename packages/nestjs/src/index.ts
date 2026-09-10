@@ -9,7 +9,10 @@
  *   NestDevTools.init(app);
  */
 export { NestDevTools, devtools } from './sdk';
-export type { InitResult } from './sdk';
+export type { InitResult, NestDevToolsOptions } from './sdk';
+export { PluginManager } from './plugins';
+export type { DevToolsPlugin, PluginContext } from './plugins';
+export type { ProfileKind, ProfileResult } from '@angelitosystems/devtools-core';
 export { captureError } from './instrumentation/exceptions';
 export type { DevToolsUserConfig } from '@angelitosystems/devtools-core';
 export { requestContext } from '@angelitosystems/devtools-core';

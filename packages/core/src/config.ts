@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'fs';
 import { basename, resolve } from 'path';
+import type { OpenTelemetryOptions } from './opentelemetry';
 
 /** Capture toggles for the SDK. */
 export interface CaptureOptions {
@@ -42,6 +43,8 @@ export interface DevToolsConfig {
   performanceInterval: number;
   /** Auth token forwarded as ?token= when connecting. */
   token?: string;
+  /** Optional OTLP/HTTP export; disabled unless an endpoint is provided. */
+  openTelemetry?: OpenTelemetryOptions;
 }
 
 /** Partial user-facing configuration. */
@@ -79,6 +82,7 @@ export function resolveConfig(user?: DevToolsUserConfig): DevToolsConfig {
     maxPayloadBytes: user?.maxPayloadBytes ?? 256 * 1024,
     performanceInterval: user?.performanceInterval ?? 5000,
     token: user?.token ?? env['NEST_DEVTOOLS_TOKEN'],
+      openTelemetry: user?.openTelemetry,
   };
 }
 

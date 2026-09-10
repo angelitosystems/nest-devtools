@@ -1,5 +1,15 @@
 # VS Code Integration
 
+The repository now includes a companion extension in `apps/vscode-extension`. It adds a NestJS DevTools view to Explorer, a live project count in the status bar, commands to start/refresh the local server, and a command to open the dashboard. The extension reads `/api/state`, so it remains useful even when the dashboard tab is closed.
+
+Build and package it with:
+
+```bash
+bun run build:extension
+cd apps/vscode-extension
+npm run package
+```
+
 Jump from a log or error in the dashboard straight to the exact line of code in VS Code.
 
 ## How it works

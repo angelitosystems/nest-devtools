@@ -1,5 +1,6 @@
 /** Wire protocol version. Bump on breaking payload changes. */
 export const PROTOCOL_VERSION = 1 as const;
+export const MIN_SUPPORTED_PROTOCOL_VERSION = 1 as const;
 
 /** JSON-RPC-ish envelope shared by every message on the wire. */
 export interface DevToolsMessage<T = unknown> {
@@ -34,6 +35,9 @@ export type DevToolsEventName =
   | 'websocket.message'
   // perf
   | 'performance.updated'
+  | 'profile.started'
+  | 'profile.completed'
+  | 'plugin.event'
   // application graph
   | 'app.snapshot'
   // control plane
@@ -58,6 +62,9 @@ export interface DevToolsEventMap {
   'websocket.connected': GatewayConnectionPayload;
   'websocket.message': GatewayMessagePayload;
   'performance.updated': PerformanceSnapshot;
+  'profile.started': ProfileStartedPayload;
+  'profile.completed': ProfileCompletedPayload;
+  'plugin.event': PluginEventPayload;
   'app.snapshot': AppSnapshot;
   'client.hello': ClientHello;
   'client.welcome': { serverVersion: string; protocol: typeof PROTOCOL_VERSION };
@@ -237,6 +244,34 @@ export interface PerformanceSnapshot {
   errorsPerSecond: number;
   /** true when the process reports memory pressure */
   memoryPressure?: boolean;
+}
+
+/** A profiling session requested by a developer or extension. */
+export interface ProfileStartedPayload {
+  projectId: string;
+  profileId: string;
+  kind: 'cpu' | 'heap';
+  startedAt: number;
+  durationMs?: number;
+}
+
+/** Result metadata for a completed profiling session. */
+export interface ProfileCompletedPayload {
+  projectId: string;
+  profileId: string;
+  kind: 'cpu' | 'heap';
+  startedAt: number;
+  completedAt: number;
+  data?: unknown;
+}
+
+/** Namespaced event emitted by a registered plugin. */
+export interface PluginEventPayload {
+  projectId: string;
+  plugin: string;
+  name: string;
+  data?: unknown;
+  timestamp: number;
 }
 
 /** Static description of the NestJS application graph. */

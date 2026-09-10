@@ -41,6 +41,9 @@ const PROJECT_EVENTS: DevToolsEventName[] = [
   'websocket.connected',
   'websocket.message',
   'performance.updated',
+  'profile.started',
+  'profile.completed',
+  'plugin.event',
   'app.snapshot',
 ];
 
@@ -63,7 +66,7 @@ export class DevToolsServer {
   private readonly dashboardSockets = new Set<WebSocket>();
 
   constructor(private readonly options: DevToolsServerOptions = {}) {
-    this.httpServer = createServer((req, res) => serveDashboard(req, res, this.options.dashboardDir));
+    this.httpServer = createServer((req, res) => serveDashboard(req, res, this.options.dashboardDir, this.store));
     this.wsHttpServer = createServer((_req, res) => {
       res.writeHead(426);
       res.end('Upgrade Required');
@@ -241,7 +244,7 @@ const MIME_TYPES: Record<string, string> = {
 };
 
 /** Minimal static file server for the built dashboard + API endpoints. */
-export function serveDashboard(req: IncomingMessage, res: ServerResponse, dashboardDir?: string): void {
+export function serveDashboard(req: IncomingMessage, res: ServerResponse, dashboardDir?: string, store?: DashboardStore): void {
   const url = new URL(req.url ?? '/', 'http://localhost');
 
   if (url.pathname === '/health') {
@@ -259,6 +262,7 @@ export function serveDashboard(req: IncomingMessage, res: ServerResponse, dashbo
           sdk: 'ws://localhost:4318?projectId=<id>',
           dashboard: 'ws://localhost:4317/ws?client=dashboard',
         },
+        snapshot: store?.snapshot() ?? null,
       }),
     );
     return;

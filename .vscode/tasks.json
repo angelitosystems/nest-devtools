@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "NestJS DevTools: compile extension",
+      "type": "shell",
+      "command": "bun run build:extension",
+      "problemMatcher": "$tsc",
+      "isBackground": false,
+      "group": "build"
+    }
+  ]
+}

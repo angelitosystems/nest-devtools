@@ -87,6 +87,8 @@ describe('protocol messages', () => {
     expect(parseMessage(JSON.stringify(msg))?.event).toBe('request.started');
     expect(parseMessage('not json')).toBeNull();
     expect(parseMessage(JSON.stringify({ event: 'unknown.event', payload: {} }))).toBeNull();
+    expect(parseMessage(JSON.stringify({ event: 'log.created', payload: {} }))).toBeNull();
+    expect(parseMessage(JSON.stringify({ ...msg, v: 99 }))).toBeNull();
   });
 
   it('knows event names', () => {

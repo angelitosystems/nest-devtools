@@ -3,6 +3,8 @@ import { LatencyTracker, ProcessMetrics } from './metrics';
 import type { DevToolsConfig } from './config';
 import { DevToolsTransport } from './transport';
 import type { TransportState } from './transport';
+import { NodeProfiler, type ProfileKind, type ProfileResult } from './profiling';
+import { OpenTelemetryExporter } from './opentelemetry';
 
 export interface CoreDevtoolsOptions {
   config: DevToolsConfig;
@@ -26,12 +28,17 @@ class CoreDevtools {
   private requestTimestamps: number[] = [];
   private errorTimestamps: number[] = [];
   private lastErrorCount = 0;
+  private readonly profiler = new NodeProfiler();
+  private telemetry?: OpenTelemetryExporter;
 
   /** Activate the transport and announce the project. Idempotent. */
   initialize(options: CoreDevtoolsOptions): void {
     if (this.transport) return;
     this.config = options.config;
     this.projectInfo = options.projectInfo;
+    if (options.config.openTelemetry?.endpoint) {
+      this.telemetry = new OpenTelemetryExporter(options.config.openTelemetry);
+    }
 
     this.transport = new DevToolsTransport(options.config.server, {
       projectId: options.config.projectId,
@@ -54,6 +61,7 @@ class CoreDevtools {
   /** Send a typed event (fire-and-forget, never throws). */
   send<K extends DevToolsEventName>(event: K, payload: DevToolsEventMap[K]): void {
     this.track(event, payload);
+    this.telemetry?.record(event, payload);
     try {
       this.transport?.send(event, payload);
     } catch {
@@ -75,6 +83,32 @@ class CoreDevtools {
   stopPerformance(): void {
     if (this.perfTimer) clearInterval(this.perfTimer);
     this.perfTimer = null;
+  }
+
+  /** Start an explicit CPU or heap profile without enabling continuous sampling. */
+  async startProfile(kind: ProfileKind): Promise<{ profileId: string; startedAt: number }> {
+    const started = await this.profiler.start(kind);
+    this.send('profile.started', {
+      projectId: this.projectInfo?.projectId ?? 'unknown',
+      profileId: started.profileId,
+      kind,
+      startedAt: started.startedAt,
+    });
+    return started;
+  }
+
+  /** Stop the active profile and publish its result to connected clients. */
+  async stopProfile(): Promise<ProfileResult> {
+    const result = await this.profiler.stop();
+    this.send('profile.completed', {
+      projectId: this.projectInfo?.projectId ?? 'unknown',
+      profileId: result.profileId,
+      kind: result.kind,
+      startedAt: result.startedAt,
+      completedAt: result.completedAt,
+      data: result.data,
+    });
+    return result;
   }
 
   /** Build a point-in-time performance snapshot. */
@@ -110,6 +144,8 @@ class CoreDevtools {
     } catch {
       /* ignore */
     }
+    this.telemetry?.stop();
+    this.telemetry = undefined;
     this.transport = undefined;
   }
 

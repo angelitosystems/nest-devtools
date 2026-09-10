@@ -16,6 +16,9 @@ import { QueueEventInstrumentation } from './instrumentation/queue';
 import { detectNestJsVersion } from './detect';
 import { SDK_VERSION } from './version';
 import { printStartupBanner, printConnectionStatus } from './banner';
+import { PluginManager } from './plugins';
+import type { DevToolsPlugin } from './plugins';
+import type { ProfileKind, ProfileResult } from '@angelitosystems/devtools-core';
 
 /** Result of calling NestDevTools.init(). */
 export interface InitResult {
@@ -28,6 +31,8 @@ export interface InitResult {
   server: string;
 }
 
+export type NestDevToolsOptions = DevToolsUserConfig & { plugins?: DevToolsPlugin[] };
+
 /**
  * Main entry point: `NestDevTools.init(app, config?)`.
  *
@@ -39,7 +44,7 @@ export class NestDevTools {
   private static initialized = false;
 
   /** Initialize DevTools for a NestJS application. One active instance per process. */
-  static init(app: INestApplication, userConfig?: DevToolsUserConfig): InitResult {
+  static init(app: INestApplication, userConfig?: NestDevToolsOptions): InitResult {
     const config = resolveConfig(userConfig);
     const disabled: InitResult = {
       enabled: false,
@@ -84,6 +89,10 @@ export class NestDevTools {
         }
       },
     } as any);
+
+    if (userConfig?.plugins && userConfig.plugins.length > 0) {
+      registerCleanup(new PluginManager(userConfig.plugins).attach(app, config, projectInfo));
+    }
 
     const adapter = app.getHttpAdapter();
     const httpReady = Boolean(adapter && ['http', 'express'].includes(adapter.getType()));
@@ -144,6 +153,16 @@ export class NestDevTools {
   static isActive(): boolean {
     return this.initialized;
   }
+
+  /** Start an explicit CPU or heap profile. */
+  static startProfile(kind: ProfileKind): Promise<{ profileId: string; startedAt: number }> {
+    return coreDevtools.startProfile(kind);
+  }
+
+  /** Stop the active profile and return its captured result. */
+  static stopProfile(): Promise<ProfileResult> {
+    return coreDevtools.stopProfile();
+  }
 }
 
 /** Convenience functional alias: devtools.init(app). */
@@ -151,6 +170,8 @@ export const devtools = {
   init: NestDevTools.init.bind(NestDevTools),
   destroy: NestDevTools.destroy.bind(NestDevTools),
   isActive: NestDevTools.isActive.bind(NestDevTools),
+  startProfile: NestDevTools.startProfile.bind(NestDevTools),
+  stopProfile: NestDevTools.stopProfile.bind(NestDevTools),
 };
 
 function safeHostname(): string {
