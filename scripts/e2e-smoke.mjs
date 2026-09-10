@@ -89,6 +89,9 @@ async function main() {
 
     console.log('');
     console.log('✓ E2E smoke passed');
+  } catch (error) {
+    console.error('Example app output:', appOutput || '(no output)');
+    throw error;
   } finally {
     app.kill();
     await Promise.race([appExit, wait(2000)]);
