@@ -2,6 +2,10 @@
   "name": "@angelitosystems/nest-devtools-cli",
   "version": "0.1.1",
   "description": "DevTools server, dashboard hosting and CLI for NestJS DevTools.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/angelitosystems/nest-devtools"
+  },
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",

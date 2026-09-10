@@ -2,6 +2,10 @@
   "name": "@angelitosystems/devtools-protocol",
   "version": "0.1.1",
   "description": "Typed WebSocket protocol shared by the NestJS DevTools SDK, server and dashboard.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/angelitosystems/nest-devtools"
+  },
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",

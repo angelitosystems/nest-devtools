@@ -2,6 +2,10 @@
   "name": "@angelitosystems/nest-devtools",
   "version": "0.1.1",
   "description": "One-line real-time debugging and observability for NestJS applications.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/angelitosystems/nest-devtools"
+  },
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",

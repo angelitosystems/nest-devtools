@@ -2,6 +2,10 @@
   "name": "@angelitosystems/devtools-core",
   "version": "0.1.1",
   "description": "Transport, request context, source-map resolution and metrics for NestJS DevTools.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/angelitosystems/nest-devtools"
+  },
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
