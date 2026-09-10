@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { NestDevTools } from '@nests-devtools/sdk'; // adjust path / package name
+import { NestDevTools } from '@angelitosystems/nest-devtools';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
