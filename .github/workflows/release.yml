@@ -77,12 +77,13 @@ jobs:
 
       - name: Verify VSIX artifact
         run: |
-          vsix=$(find apps/vscode-extension -maxdepth 1 -type f -name '*.vsix' -size +0c -print -quit)
-          if [ -z "$vsix" ]; then
-            echo "No se encontró un VSIX no vacío"
+          shopt -s nullglob
+          vsix_files=(apps/vscode-extension/*.vsix)
+          if [ "${#vsix_files[@]}" -ne 1 ] || [ ! -s "${vsix_files[0]}" ]; then
+            echo "Se esperaba exactamente un VSIX no vacío; encontrados: ${#vsix_files[@]}"
             exit 1
           fi
-          echo "VSIX verificado: $vsix"
+          echo "VSIX verificado: ${vsix_files[0]}"
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
