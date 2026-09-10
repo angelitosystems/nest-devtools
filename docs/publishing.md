@@ -73,7 +73,8 @@ El segundo comando reemplaza `packages/cli/public` con `apps/dashboard/dist`. No
 En npm, abre cada paquete y configura un publicador confiable en **Package settings > Trusted Publisher**:
 
 - Proveedor: **GitHub Actions**.
-- Repositorio: el repositorio GitHub que contiene este proyecto.
+- Organización o usuario: `angelitosystems`.
+- Repositorio: `nest-devtools`.
 - Workflow: `.github/workflows/release.yml`.
 - Entorno: déjalo vacío, salvo que el repositorio use un entorno de GitHub para publicar.
 
