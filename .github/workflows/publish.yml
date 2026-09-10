@@ -21,6 +21,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js for npm Trusted Publishing
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install npm Trusted Publishing support
+        run: npm install --global npm@11.5.1
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -47,17 +55,5 @@ jobs:
       - name: Verify CLI package contains the dashboard
         run: npm pack ./packages/cli --dry-run
 
-      - name: Configure npm authentication
-        run: |
-          if [ -z "${NPM_TOKEN}" ]; then
-            echo "NPM_TOKEN secret is required"
-            exit 1
-          fi
-          printf '%s\n' "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" 'always-auth=true' > "$HOME/.npmrc"
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
       - name: Publish packages
         run: bun run scripts/publish.ts
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

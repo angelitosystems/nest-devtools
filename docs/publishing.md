@@ -18,26 +18,21 @@ El dashboard (`apps/dashboard`) es privado y se copia dentro del paquete CLI ant
 ## Requisitos
 
 - Tener una cuenta npm con permiso para publicar bajo el scope `@angelitosystems`.
+- Configurar Trusted Publishing para cada paquete en npm, usando GitHub Actions como proveedor.
 - Tener instalado Node.js 18 o superior, npm y Bun 1.1 o superior.
 - Trabajar desde la raíz del repositorio.
 - No haber publicado previamente ninguna de las versiones que se van a usar. npm no permite volver a publicar la misma combinación de nombre y versión.
 
-Comprueba las herramientas y la sesión:
+Comprueba las herramientas:
 
 ```powershell
 node --version
 npm --version
 bun --version
-npm whoami
 npm config get registry
 ```
 
-El registro debe ser `https://registry.npmjs.org/`. Si `npm whoami` falla, autentícate primero:
-
-```powershell
-npm login
-npm whoami
-```
+El registro debe ser `https://registry.npmjs.org/`.
 
 ## Primera publicación manual
 
@@ -73,38 +68,16 @@ bun run scripts/prepare-publish.ts
 
 El segundo comando reemplaza `packages/cli/public` con `apps/dashboard/dist`. No lo omitas: el paquete CLI publicado necesita esos archivos para servir el dashboard.
 
-### 4. Configura el token de npm para el script
+### 4. Configura npm Trusted Publishing
 
-En una terminal interactiva, el script pregunta por el token y lo usa mediante un archivo `.npmrc` temporal que se elimina al terminar:
+En npm, abre cada paquete y configura un publicador confiable en **Package settings > Trusted Publisher**:
 
-```powershell
-bun run scripts/publish.ts
-# npm token: (la entrada no se muestra)
-```
+- Proveedor: **GitHub Actions**.
+- Repositorio: el repositorio GitHub que contiene este proyecto.
+- Workflow: `.github/workflows/release.yml`.
+- Entorno: déjalo vacío, salvo que el repositorio use un entorno de GitHub para publicar.
 
-También puedes proporcionar el token mediante `NPM_TOKEN` cuando ejecutes el script desde CI. Crea un token de npm con permiso de lectura y escritura de paquetes. Para una ejecución manual con PowerShell:
-
-```powershell
-$env:NPM_TOKEN = "<pega-aqui-tu-token>"
-"//registry.npmjs.org/:_authToken=$env:NPM_TOKEN" | Set-Content "$HOME\.npmrc"
-npm whoami
-```
-
-Si la cuenta tiene activada la verificación en dos pasos para publicar, el script pregunta después por el código OTP. La entrada tampoco se muestra y puedes pulsar Enter si no es necesario:
-
-```powershell
-bun run scripts/publish.ts
-# npm OTP (press Enter if not required): (la entrada no se muestra)
-```
-
-También puedes definir `NPM_OTP` para una ejecución no interactiva. El script pasa ese valor a `npm publish` en cada paquete. Si el código caduca durante una publicación, asígnalo de nuevo y repite el proceso; el script comprobará qué versiones ya existen antes de continuar.
-
-No guardes el token en el repositorio ni lo introduzcas en el workflow como texto plano. Al terminar, puedes limpiar la variable de la sesión:
-
-```powershell
-Remove-Item Env:NPM_TOKEN
-Remove-Item Env:NPM_OTP -ErrorAction SilentlyContinue
-```
+Repite la configuración para los cuatro paquetes. Si también vas a ejecutar el workflow manual `publish.yml`, añade ese workflow como segundo publicador confiable en cada paquete. No hace falta crear `NPM_TOKEN` ni escribir credenciales en `.npmrc`.
 
 ### 5. Publica usando el flujo del repositorio
 
@@ -114,11 +87,10 @@ bun run scripts/publish.ts
 
 `scripts/publish.ts` hace estas comprobaciones y operaciones:
 
-1. Comprueba que `NPM_TOKEN` exista.
-2. Lee las versiones y detiene el proceso si no son iguales.
-3. Comprueba en npm que cada combinación paquete/versión aún no exista.
-4. Publica en orden de dependencias.
-5. Sustituye temporalmente `workspace:*` y `workspace:^` por versiones npm (`^0.1.0`) y restaura los `package.json` aunque una publicación falle.
+1. Lee las versiones y detiene el proceso si no son iguales.
+2. Comprueba en npm que cada combinación paquete/versión aún no exista.
+3. Publica en orden de dependencias usando Trusted Publishing y provenance.
+4. Sustituye temporalmente `workspace:*` y `workspace:^` por versiones npm (`^0.1.0`) y restaura los `package.json` aunque una publicación falle.
 
 Si una publicación intermedia falla, no repitas ciegamente todo el comando: revisa qué paquete ya apareció en npm. Las versiones ya publicadas no se pueden reutilizar; incrementa la versión de todos los paquetes para el siguiente intento o publica únicamente lo que falte con extremo cuidado.
 
@@ -140,10 +112,9 @@ El workflow [.github/workflows/release.yml](../.github/workflows/release.yml) ej
 
 Antes de usarlo:
 
-1. Configura el secreto `NPM_TOKEN` en **Settings > Secrets and variables > Actions** del repositorio.
-2. Asegúrate de que el token pueda publicar el scope `@angelitosystems`.
-3. Incrementa la misma versión en los cuatro paquetes y actualiza `bun.lock` si cambia.
-4. Confirma los cambios y crea un tag con formato `vX.Y.Z`, por ejemplo:
+1. Configura Trusted Publishing en npm para los cuatro paquetes y el workflow que vaya a ejecutarse.
+2. Incrementa la misma versión en los cuatro paquetes y actualiza `bun.lock` si cambia.
+3. Confirma los cambios y crea un tag con formato `vX.Y.Z`, por ejemplo:
 
 ```powershell
 git tag v0.1.1
@@ -156,9 +127,8 @@ El push del tag activa el workflow. También existe `workflow_dispatch`, pero de
 
 | Mensaje o síntoma | Causa habitual | Acción |
 |---|---|---|
-| `npm token ... requires an interactive terminal` | El script intenta preguntar desde un proceso sin TTY | Define `NPM_TOKEN` y, si aplica, `NPM_OTP` |
-| `EOTP` / `requires a one-time password` | La cuenta exige 2FA para publicar | Define `NPM_OTP` con el código actual; en Actions usa un token de automatización |
+| Error de Trusted Publishing / OIDC | El workflow o el repositorio no coinciden con la configuración del paquete en npm | Revisa el proveedor, repositorio y nombre exacto del workflow en **Package settings > Trusted Publisher** |
 | `versions out of sync` | Los cuatro paquetes tienen versiones diferentes | Iguala sus versiones |
 | `already published` | Esa versión ya existe en npm | Usa una nueva versión o corrige el release parcial |
 | El CLI no muestra el dashboard | No se ejecutó `prepare-publish.ts` | Construye `apps/dashboard` y vuelve a preparar el paquete |
-| `npm whoami` falla | Token ausente, inválido o registro incorrecto | Revisa `.npmrc`, permisos y `npm config get registry` |
+| El registro no coincide | npm apunta a un registro distinto | Revisa `npm config get registry` |
