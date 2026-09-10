@@ -54,18 +54,16 @@
     "vscode:prepublish": "npm run compile",
     "package": "npm run compile && npx @vscode/vsce package"
   },
-  "dependencies": {
-    "@angelitosystems/devtools-protocol": "workspace:*",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
+  "files": ["out", "media", "README.md"],
   "devDependencies": {
     "@types/node": "^22.10.0",
     "@types/vscode": "^1.85.0",
     "typescript": "^5.7.0",
-    "@vscode/vsce": "^3.2.1"
-    ,"@types/react": "^18.3.12"
-    ,"@types/react-dom": "^18.3.1"
-    ,"esbuild": "^0.24.2"
+    "@vscode/vsce": "^3.2.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "esbuild": "^0.24.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }

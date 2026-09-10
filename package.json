@@ -25,6 +25,7 @@
     "docs:build": "bun run --cwd apps/docs build",
     "typecheck:docs": "tsc -p apps/docs/tsconfig.json --noEmit",
     "build:extension": "bun run --cwd apps/vscode-extension compile"
+    ,"package:extension": "bun run --cwd apps/vscode-extension package"
   },
   "devDependencies": {
     "@types/node": "^22.20.2",

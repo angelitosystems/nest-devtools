@@ -38,3 +38,11 @@ const cliVersionPath = join(packagesDir, 'cli', 'src', 'version.ts');
 if (existsSync(cliVersionPath)) {
   writeFileSync(cliVersionPath, `/** CLI version reported to connected SDKs and dashboards. */\nexport const CLI_VERSION = '${version}';\n`);
 }
+
+const extensionManifestPath = join(import.meta.dir, '..', 'apps', 'vscode-extension', 'package.json');
+if (existsSync(extensionManifestPath)) {
+  const extension = JSON.parse(readFileSync(extensionManifestPath, 'utf8'));
+  extension.version = version;
+  writeFileSync(extensionManifestPath, JSON.stringify(extension, null, 2) + '\n');
+  console.log(`✓ nest-devtools-vscode → ${version}`);
+}
