@@ -5,6 +5,10 @@
   "version": "0.1.0",
   "publisher": "angelitosystems",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/angelitosystems/nest-devtools-monorepo.git"
+  },
   "engines": { "vscode": "^1.85.0" },
   "categories": ["Other"],
   "activationEvents": ["onStartupFinished"],
@@ -54,7 +58,6 @@
     "vscode:prepublish": "npm run compile",
     "package": "npm run compile && npx @vscode/vsce package"
   },
-  "files": ["out", "media", "README.md"],
   "devDependencies": {
     "@angelitosystems/devtools-protocol": "workspace:*",
     "@types/node": "^22.10.0",
