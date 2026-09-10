@@ -163,11 +163,8 @@ export class DevToolsServer {
       sdkVersion: 'unknown',
     };
     this.store.upsertProject(placeholder);
-    this.store.upsertProject(placeholder);
     this.options.onEvent?.('project-connected', { projectId, projectName: projectId });
     this.broadcastToDashboards(createMessage('project.connected', placeholder, { projectId }));
-
-    ws.on('message', (raw) => this.onProjectMessage(ws, projectId, raw.toString()));
   }
 
   private onProjectMessage(ws: WebSocket, projectId: string, raw: string): void {
