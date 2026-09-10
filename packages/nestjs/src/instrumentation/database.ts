@@ -30,11 +30,22 @@ export class DatabaseInstrumentation {
 
     if (!this.config.capture.database) return () => cleanup.forEach((fn) => fn());
 
-    if (this.tryAttachTypeOrm()) cleanup.push(this.detachTypeOrm());
-    if (this.tryAttachPrisma()) cleanup.push(this.detachPrisma());
-    if (this.tryAttachMongoose()) cleanup.push(this.detachMongoose());
+    let disposed = false;
+    queueMicrotask(() => {
+      if (disposed) return;
+      try {
+        if (this.tryAttachTypeOrm()) cleanup.push(this.detachTypeOrm());
+        if (this.tryAttachPrisma()) cleanup.push(this.detachPrisma());
+        if (this.tryAttachMongoose()) cleanup.push(this.detachMongoose());
+      } catch {
+        /* database discovery must never affect NestJS startup */
+      }
+    });
 
-    return () => cleanup.forEach((fn) => fn());
+    return () => {
+      disposed = true;
+      cleanup.splice(0).forEach((fn) => fn());
+    };
   }
 
   private tryAttachTypeOrm(): boolean {
@@ -301,7 +312,7 @@ export class DatabaseInstrumentation {
 
   private resolveTypeOrmDataSource(app: any): any {
     try {
-      const dataSource = this.findProvider(app, (value) => typeof value?.query === 'function' && typeof value?.manager === 'object');
+      const dataSource = this.findProvider(app, /data.?source|typeorm/i, (value) => typeof value?.query === 'function' && typeof value?.manager === 'object');
       if (dataSource) return dataSource;
       return null;
     } catch {
@@ -311,11 +322,12 @@ export class DatabaseInstrumentation {
 
   private resolvePrismaClient(app: any): any {
     try {
-      const prisma = this.safeGet(app, 'PrismaService')
-        ?? this.safeGet(app, 'PrismaClient')
-        ?? this.safeGet(app, 'prisma')
-        ?? this.findProvider(app, (value) => typeof value?.$queryRaw === 'function');
-      if (prisma && typeof prisma.$queryRaw === 'function') return prisma;
+      const prisma = this.findProvider(app, /prisma/i, (value) =>
+          typeof value?.$queryRaw === 'function'
+          && typeof value?.$connect === 'function'
+          && typeof value?.$disconnect === 'function',
+        );
+      if (prisma && typeof prisma.$queryRaw === 'function' && typeof prisma.$connect === 'function') return prisma;
       return null;
     } catch {
       return null;
@@ -324,10 +336,7 @@ export class DatabaseInstrumentation {
 
   private resolveMongoose(app: any): any {
     try {
-      const mongoose = this.safeGet(app, 'MongooseService')
-        ?? this.safeGet(app, 'Mongoose')
-        ?? this.safeGet(app, 'mongoose')
-        ?? this.findProvider(app, (value) => typeof value?.plugin === 'function');
+      const mongoose = this.findProvider(app, /mongoose/i, (value) => typeof value?.plugin === 'function');
       if (mongoose && typeof mongoose.plugin === 'function') return mongoose;
       return null;
     } catch {
@@ -335,21 +344,19 @@ export class DatabaseInstrumentation {
     }
   }
 
-  private safeGet(app: any, token: string): any {
-    try {
-      return app?.get?.(token, { strict: false }) ?? null;
-    } catch {
-      return null;
-    }
-  }
-
-  private findProvider(app: any, predicate: (value: any) => boolean): any {
+  private findProvider(app: any, namePattern: RegExp, predicate: (value: any) => boolean): any {
     try {
       const modules = app?.container?.getModules?.() ?? new Map();
       for (const module of modules.values()) {
-        for (const wrapper of (module.providers?.values?.() ?? [])) {
-          const instance = wrapper?.instance;
-          if (instance && predicate(instance)) return instance;
+        for (const [token, wrapper] of (module.providers?.entries?.() ?? [])) {
+          const name = String(wrapper?.name ?? wrapper?.metatype?.name ?? token ?? '');
+          if (!namePattern.test(name)) continue;
+          try {
+            const instance = wrapper?.instance;
+            if (instance && predicate(instance)) return instance;
+          } catch {
+            /* providers may expose getters that are unsafe before init */
+          }
         }
       }
       return null;

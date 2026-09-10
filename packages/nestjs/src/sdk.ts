@@ -114,7 +114,7 @@ export class NestDevTools {
 
     // ---- websockets + database + queues (best effort) ------------------
     if (config.capture.websockets) {
-      registerCleanup(new WebsocketInstrumentation({ config, projectInfo, app }).attach());
+      registerCleanup(new WebsocketInstrumentation({ config, projectInfo }).attach());
     }
     if (config.capture.database) {
       registerCleanup(new DatabaseInstrumentation({ config, projectInfo, app }).attach());
