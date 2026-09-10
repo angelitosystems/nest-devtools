@@ -2,7 +2,7 @@ import { createServer, Server as HttpServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import express, { Express } from 'express';
 import path from 'path';
-import { INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 
 export interface StartServerOptions {
   httpPort: number;
