@@ -1,7 +1,9 @@
-*
-!package.json
-!README.md
-!media/
-!media/**
-!out/
-!out/**
+src
+src/**
+*.ts
+*.tsx
+tsconfig.json
+node_modules
+node_modules/**
+media/**/*.map
+*.vsix
