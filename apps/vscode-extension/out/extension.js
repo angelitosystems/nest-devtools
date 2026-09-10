@@ -42,9 +42,11 @@ const node_https_1 = require("node:https");
 let serverProcess;
 let refreshTimer;
 let dashboardPanel;
+let extensionRoot;
 function activate(context) {
+    extensionRoot = context.extensionUri;
     const provider = new ProjectsProvider();
-    context.subscriptions.push(vscode.window.createTreeView('nestDevTools.projects', { treeDataProvider: provider }), vscode.commands.registerCommand('nestDevTools.startServer', () => startServer(provider)), vscode.commands.registerCommand('nestDevTools.openDashboard', () => openDashboard(provider)), vscode.commands.registerCommand('nestDevTools.openRequests', () => openDashboard(provider, 'requests')), vscode.commands.registerCommand('nestDevTools.openErrors', () => openDashboard(provider, 'errors')), vscode.commands.registerCommand('nestDevTools.openDatabase', () => openDashboard(provider, 'database')), vscode.commands.registerCommand('nestDevTools.openExternal', () => openExternalDashboard()), vscode.commands.registerCommand('nestDevTools.refresh', () => provider.refresh()), vscode.commands.registerCommand('nestDevTools.showStatus', () => showStatus()));
+    context.subscriptions.push(vscode.window.createTreeView('nestDevTools.projects', { treeDataProvider: provider }), vscode.commands.registerCommand('nestDevTools.startServer', () => startServer(provider)), vscode.commands.registerCommand('nestDevTools.openDashboard', () => openDashboard(provider, 'overview', 'react')), vscode.commands.registerCommand('nestDevTools.openRequests', () => openDashboard(provider, 'requests', 'native')), vscode.commands.registerCommand('nestDevTools.openErrors', () => openDashboard(provider, 'errors', 'native')), vscode.commands.registerCommand('nestDevTools.openDatabase', () => openDashboard(provider, 'database', 'native')), vscode.commands.registerCommand('nestDevTools.openExternal', () => openExternalDashboard()), vscode.commands.registerCommand('nestDevTools.refresh', () => provider.refresh()), vscode.commands.registerCommand('nestDevTools.showStatus', () => showStatus()));
     const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
     status.command = 'nestDevTools.openDashboard';
     context.subscriptions.push(status);
@@ -79,9 +81,20 @@ async function startServer(provider) {
     serverProcess.once('error', (error) => vscode.window.showErrorMessage(`Could not start DevTools: ${error.message}`));
     await new Promise((resolve) => setTimeout(resolve, 500));
     provider.refresh();
-    await openDashboard(provider);
+    await openDashboard(provider, 'overview', 'react');
 }
-async function openDashboard(provider, section = 'overview') {
+async function openDashboard(provider, section = 'overview', mode = 'native') {
+    if (mode === 'react') {
+        if (dashboardPanel) {
+            dashboardPanel.reveal(vscode.ViewColumn.One);
+        }
+        else {
+            dashboardPanel = vscode.window.createWebviewPanel('nestDevTools.reactDashboard', 'NestJS DevTools Live', vscode.ViewColumn.One, { enableScripts: true });
+            dashboardPanel.onDidDispose(() => { dashboardPanel = undefined; });
+        }
+        dashboardPanel.webview.html = renderReactDashboard(dashboardPanel.webview);
+        return;
+    }
     if (dashboardPanel) {
         dashboardPanel.reveal(vscode.ViewColumn.One);
         dashboardPanel.webview.html = renderDashboard(undefined, section, false);
@@ -103,6 +116,17 @@ async function openDashboard(provider, section = 'overview') {
     }
     if (dashboardPanel)
         await updateDashboard(dashboardPanel, section);
+}
+function renderReactDashboard(webview) {
+    const serverUrl = getConfig().serverUrl.replace(/\/$/, '');
+    let origin = serverUrl;
+    try {
+        origin = new URL(serverUrl).origin;
+    }
+    catch { /* use configured URL */ }
+    const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionRoot, 'media', 'webview.js'));
+    const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionRoot, 'media', 'webview.css'));
+    return `<!doctype html><html><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src ${webview.cspSource}; style-src ${webview.cspSource} 'unsafe-inline'; connect-src ${escapeHtml(origin)} ws: wss:;"><link rel="stylesheet" href="${styleUri}"></head><body data-server-url="${escapeHtml(serverUrl)}"><div id="root"></div><script src="${scriptUri}"></script></body></html>`;
 }
 async function updateDashboard(panel, section) {
     const state = await fetchState();
