@@ -56,7 +56,7 @@
     "build:webview": "esbuild src/webview/main.tsx --bundle --outfile=media/webview.js --format=iife --platform=browser",
     "watch": "tsc -p tsconfig.json --watch",
     "vscode:prepublish": "npm run compile",
-    "package": "npm run compile && npx @vscode/vsce package"
+    "package": "npm run compile && npx @vscode/vsce package --no-dependencies"
   },
   "devDependencies": {
     "@angelitosystems/devtools-protocol": "workspace:*",

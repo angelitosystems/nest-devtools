@@ -1,6 +1,7 @@
-src/**
-tsconfig.json
-package-lock.json
-node_modules/**
-media/**/*.map
-*.vsix
+*
+!package.json
+!README.md
+!media/
+!media/**
+!out/
+!out/**
