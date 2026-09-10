@@ -129,6 +129,13 @@ export class DatabaseInstrumentation {
         return true;
       }
 
+      if (typeof prisma.$on === 'function') {
+        prisma.$on('query', (event: { query?: string; params?: string; duration?: number; target?: string }) => {
+          this.endQuery(event.query ?? 'prisma.query', event.params ? [event.params] : [], event.duration ?? 0);
+        });
+        return true;
+      }
+
       const original = prisma.$queryRaw ?? prisma.$executeRaw ?? null;
       if (!original) return false;
 

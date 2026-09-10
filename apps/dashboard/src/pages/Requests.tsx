@@ -97,6 +97,7 @@ export default function RequestsPage({ store }: { store: DevToolsState }) {
 }
 
 function RequestDetail({ request }: { request: RequestCompletedPayload }) {
+  const [tab, setTab] = useState<'overview' | 'headers' | 'body' | 'response'>('overview');
   const total = Math.max(request.duration, 1);
   const layers = groupByLayer(request.timeline);
 
@@ -120,7 +121,22 @@ function RequestDetail({ request }: { request: RequestCompletedPayload }) {
         </div>
       </header>
 
-      <section className="p-4">
+      <nav className="flex gap-1 px-3 py-2 border-b border-surface-700 bg-surface-900/40">
+        {(['overview', 'headers', 'body', 'response'] as const).map((item) => (
+          <button
+            key={item}
+            onClick={() => setTab(item)}
+            className={cn(
+              'px-2 py-1 text-[10px] uppercase tracking-wider rounded',
+              tab === item ? 'bg-accent-600 text-white' : 'text-slate-500 hover:text-slate-200 hover:bg-surface-800',
+            )}
+          >
+            {item}
+          </button>
+        ))}
+      </nav>
+
+      {tab === 'overview' && <section className="p-4">
         <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-3">
           Timeline
         </h3>
@@ -164,9 +180,9 @@ function RequestDetail({ request }: { request: RequestCompletedPayload }) {
             </p>
           )}
         </div>
-      </section>
+      </section>}
 
-      {request.query && Object.keys(request.query).length > 0 && (
+      {tab === 'overview' && request.query && Object.keys(request.query).length > 0 && (
         <section className="px-4 pb-4">
           <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-2">
             Query
@@ -177,17 +193,17 @@ function RequestDetail({ request }: { request: RequestCompletedPayload }) {
         </section>
       )}
 
-      {request.requestHeaders &&
+      {tab === 'headers' && request.requestHeaders &&
         Object.keys(request.requestHeaders).length > 0 && (
           <JsonSection title="Request headers" value={request.requestHeaders} />
         )}
-      {request.headers && Object.keys(request.headers).length > 0 && (
+      {tab === 'headers' && request.headers && Object.keys(request.headers).length > 0 && (
         <JsonSection title="Response headers" value={request.headers} />
       )}
-      {request.requestBody !== undefined && (
+      {tab === 'body' && request.requestBody !== undefined && (
         <JsonSection title="Request body" value={request.requestBody} />
       )}
-      {(request.responseBody !== undefined || request.responsePreview) && (
+      {tab === 'response' && (request.responseBody !== undefined || request.responsePreview) && (
         <JsonSection
           title="Response"
           value={request.responseBody ?? request.responsePreview}
@@ -198,13 +214,20 @@ function RequestDetail({ request }: { request: RequestCompletedPayload }) {
 }
 
 function JsonSection({ title, value }: { title: string; value: unknown }) {
+  const formatted = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
   return (
     <section className="px-4 pb-4">
-      <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-2">
-        {title}
-      </h3>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-[11px] uppercase tracking-wider text-slate-500">{title}</h3>
+        <button
+          onClick={() => void navigator.clipboard?.writeText(formatted ?? '')}
+          className="text-[10px] text-accent-400 hover:text-accent-300"
+        >
+          Copy
+        </button>
+      </div>
       <pre className="text-[11px] font-mono bg-surface-900 rounded p-2 overflow-auto text-slate-300 whitespace-pre-wrap break-all">
-        {typeof value === "string" ? value : JSON.stringify(value, null, 2)}
+        {formatted}
       </pre>
     </section>
   );

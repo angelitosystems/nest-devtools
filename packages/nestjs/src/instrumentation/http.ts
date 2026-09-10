@@ -19,6 +19,7 @@ import { SourceLocation } from '@angelitosystems/devtools-protocol';
 export interface InstrumentationContext {
   config: DevToolsConfig;
   projectInfo: ProjectInfo;
+  app?: INestApplication;
 }
 
 /** Request headers captured by default (denylist still applies). */
