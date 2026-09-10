@@ -50,7 +50,7 @@ function activate(context) {
     context.subscriptions.push(status);
     const updateStatus = async () => {
         const state = await fetchState();
-        status.text = state?.snapshot ? `$(pulse) DevTools ${state.snapshot.projects.length}` : '$(circle-slash) DevTools offline';
+        status.text = state?.snapshot ? `$(pulse) DevTools ${state.snapshot.projects.length}` : state?.ok ? '$(pulse) DevTools online' : '$(circle-slash) DevTools offline';
         status.tooltip = 'Open NestJS DevTools dashboard';
         status.show();
     };
@@ -84,7 +84,7 @@ async function startServer(provider) {
 async function openDashboard(provider, section = 'overview') {
     if (dashboardPanel) {
         dashboardPanel.reveal(vscode.ViewColumn.One);
-        dashboardPanel.webview.html = renderDashboard(undefined, section);
+        dashboardPanel.webview.html = renderDashboard(undefined, section, false);
     }
     else {
         dashboardPanel = vscode.window.createWebviewPanel('nestDevTools.dashboard', 'NestJS DevTools', vscode.ViewColumn.One, { enableScripts: true });
@@ -106,7 +106,7 @@ async function openDashboard(provider, section = 'overview') {
 }
 async function updateDashboard(panel, section) {
     const state = await fetchState();
-    panel.webview.html = renderDashboard(state?.snapshot ?? undefined, section);
+    panel.webview.html = renderDashboard(state?.snapshot ?? undefined, section, state?.ok === true);
 }
 async function openExternalDashboard() {
     await vscode.env.openExternal(vscode.Uri.parse(getConfig().serverUrl));
@@ -149,10 +149,10 @@ class ProjectItem extends vscode.TreeItem {
 function isDashboardSection(value) {
     return value === 'overview' || value === 'requests' || value === 'errors' || value === 'database';
 }
-function renderDashboard(snapshot, section) {
+function renderDashboard(snapshot, section, serverReachable = false) {
     const title = section === 'overview' ? 'Overview' : section[0].toUpperCase() + section.slice(1);
     if (!snapshot) {
-        return pageHtml(title, `<div class="empty"><h2>DevTools offline</h2><p>Start the local server or check the configured URL.</p><button data-command="start">Start server</button><button data-command="external">Open in browser</button></div>`);
+        return pageHtml(title, `<div class="empty"><h2>${serverReachable ? 'Server connected' : 'DevTools offline'}</h2><p>${serverReachable ? 'The server is responding, but its snapshot is unavailable. Restart nest-devtools to load the latest API.' : 'Start the local server or check the configured URL.'}</p><button data-command="refresh">Refresh</button><button data-command="start">Start server</button><button data-command="external">Open in browser</button></div>`, serverReachable);
     }
     const content = section === 'requests'
         ? table('Requests', ['Method', 'URL', 'Status', 'Duration'], snapshot.requests.slice(-30).reverse().map((item) => [item.method, item.url, String(item.statusCode), `${item.duration} ms`]))
@@ -165,11 +165,11 @@ function renderDashboard(snapshot, section) {
           <h2>Recent logs</h2>${snapshot.logs.slice(-12).reverse().map((log) => `<p class="log"><b class="${log.level}">${escapeHtml(log.level)}</b> ${escapeHtml(log.message)}</p>`).join('') || '<p class="muted">No logs captured.</p>'}`;
     return pageHtml(title, content);
 }
-function pageHtml(title, content) {
+function pageHtml(title, content, serverReachable = true) {
     const sections = [['overview', 'Overview'], ['requests', 'Requests'], ['errors', 'Errors'], ['database', 'Database']];
     return `<!doctype html><html><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';"><style>
     :root{color-scheme:dark}*{box-sizing:border-box}body{font-family:var(--vscode-font-family);color:var(--vscode-foreground);background:var(--vscode-editor-background);padding:28px clamp(18px,4vw,48px);max-width:1280px;margin:auto}.app{max-width:1120px;margin:auto}.header{display:flex;align-items:flex-end;gap:18px;padding:4px 0 22px;border-bottom:1px solid var(--vscode-panel-border)}.brand-mark{display:grid;place-items:center;width:42px;height:42px;border-radius:10px;background:var(--vscode-button-background);color:var(--vscode-button-foreground);font-size:21px;font-weight:700}.eyebrow{margin:0 0 4px;color:var(--vscode-textLink-foreground);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}.header h1{margin:0;font-size:25px;letter-spacing:-.3px}.subtitle{margin:5px 0 0;color:var(--vscode-descriptionForeground);font-size:12px}.live{margin-left:auto;align-self:flex-start;display:flex;align-items:center;gap:7px;color:var(--vscode-testing-iconPassed);font-size:11px}.live:before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 4px color-mix(in srgb,currentColor 15%,transparent)}.toolbar{display:flex;align-items:center;gap:8px;padding:16px 0 20px}.nav{display:flex;gap:5px;flex:1}.nav button{color:var(--vscode-descriptionForeground);background:transparent;border:1px solid transparent;border-radius:6px;padding:7px 11px;font-size:12px}.nav button:hover,.nav button.active{color:var(--vscode-foreground);background:var(--vscode-list-hoverBackground);border-color:var(--vscode-panel-border)}button{font:inherit;color:var(--vscode-button-foreground);background:var(--vscode-button-background);border:0;border-radius:5px;padding:7px 11px;cursor:pointer}button:hover{background:var(--vscode-button-hoverBackground)}.secondary{color:var(--vscode-foreground);background:var(--vscode-input-background);border:1px solid var(--vscode-panel-border)}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px}.cards div{position:relative;overflow:hidden;background:var(--vscode-editorWidget-background);border:1px solid var(--vscode-panel-border);border-radius:8px;padding:16px}.cards div:before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--vscode-textLink-foreground)}.cards strong{display:block;font-size:26px;line-height:1.1;margin-bottom:7px}.cards span,li span,.muted{color:var(--vscode-descriptionForeground);font-size:12px}.section-heading{display:flex;align-items:center;justify-content:space-between;margin:26px 0 9px}.section-heading h2,h2{margin:0;color:var(--vscode-foreground);font-size:13px;font-weight:600}.section-heading span{color:var(--vscode-descriptionForeground);font-size:11px}ul{list-style:none;padding:0;margin:0;background:var(--vscode-editorWidget-background);border:1px solid var(--vscode-panel-border);border-radius:8px;padding:0 14px}li{display:flex;justify-content:space-between;gap:18px;border-bottom:1px solid var(--vscode-panel-border);padding:11px 2px}li:last-child{border-bottom:0}table{width:100%;border-collapse:separate;border-spacing:0;background:var(--vscode-editorWidget-background);border:1px solid var(--vscode-panel-border);border-radius:8px;overflow:hidden;font-size:12px}th,td{text-align:left;border-bottom:1px solid var(--vscode-panel-border);padding:11px 12px;vertical-align:top}th{color:var(--vscode-descriptionForeground);font-size:10px;text-transform:uppercase;letter-spacing:.8px;background:var(--vscode-sideBar-background)}tr:last-child td{border-bottom:0}td{word-break:break-word}.log{font-family:var(--vscode-editor-font-family);font-size:12px;padding:8px 0;margin:0;border-bottom:1px solid var(--vscode-panel-border)}.debug{color:#888}.info{color:#4fc1ff}.warn{color:#cca700}.error{color:#f14c4c}.empty{background:var(--vscode-editorWidget-background);border:1px solid var(--vscode-panel-border);border-radius:10px;padding:42px 28px}.empty h2{font-size:18px;margin-bottom:8px}.empty p{color:var(--vscode-descriptionForeground);margin:0 0 18px}.empty button{margin-right:8px}@media(max-width:650px){.header{align-items:flex-start}.live{display:none}.toolbar{align-items:flex-start;flex-wrap:wrap}.nav{flex-basis:100%;order:2;overflow:auto}.toolbar>.secondary{order:1}}
-  </style></head><body><main class="app"><header class="header"><div class="brand-mark">N</div><div><p class="eyebrow">NestJS observability</p><h1>${escapeHtml(title)}</h1><p class="subtitle">Live application signals from your local DevTools server</p></div><div class="live">LIVE</div></header><div class="toolbar"><nav class="nav">${sections.map(([id, label]) => `<button class="${id === title.toLowerCase() ? 'active' : ''}" data-section="${id}">${label}</button>`).join('')}</nav><button class="secondary" data-command="refresh">↻ Refresh</button><button class="secondary" data-command="external">Open browser</button></div>${content}</main><script>const vscode=acquireVsCodeApi();document.querySelectorAll('[data-command]').forEach((button)=>button.addEventListener('click',()=>vscode.postMessage({command:button.dataset.command})));document.querySelectorAll('[data-section]').forEach((button)=>button.addEventListener('click',()=>vscode.postMessage({command:'section',section:button.dataset.section})));</script></body></html>`;
+  </style></head><body><main class="app"><header class="header"><div class="brand-mark">N</div><div><p class="eyebrow">NestJS observability</p><h1>${escapeHtml(title)}</h1><p class="subtitle">Live application signals from your local DevTools server</p></div><div class="live" style="color:${serverReachable ? 'var(--vscode-testing-iconPassed)' : 'var(--vscode-testing-iconFailed)'}">${serverReachable ? 'LIVE' : 'OFFLINE'}</div></header><div class="toolbar"><nav class="nav">${sections.map(([id, label]) => `<button class="${id === title.toLowerCase() ? 'active' : ''}" data-section="${id}">${label}</button>`).join('')}</nav><button class="secondary" data-command="refresh">↻ Refresh</button><button class="secondary" data-command="external">Open browser</button></div>${content}</main><script>const vscode=acquireVsCodeApi();document.querySelectorAll('[data-command]').forEach((button)=>button.addEventListener('click',()=>vscode.postMessage({command:button.dataset.command})));document.querySelectorAll('[data-section]').forEach((button)=>button.addEventListener('click',()=>vscode.postMessage({command:'section',section:button.dataset.section})));</script></body></html>`;
 }
 function table(title, headers, rows) {
     return `<h2>${escapeHtml(title)}</h2>${rows.length === 0 ? '<p class="muted">Nothing captured yet.</p>' : `<table><thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table>`}`;
