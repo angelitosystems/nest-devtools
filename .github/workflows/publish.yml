@@ -44,6 +44,9 @@ jobs:
       - name: End-to-end smoke
         run: bun run e2e
 
+      - name: Verify CLI package contains the dashboard
+        run: npm pack ./packages/cli --dry-run
+
       - name: Configure npm authentication
         run: |
           if [ -z "${NPM_TOKEN}" ]; then

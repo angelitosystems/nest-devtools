@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { spawn, type ChildProcess } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
 import type { ProjectInfo, StateSnapshot } from '@angelitosystems/devtools-protocol' with { 'resolution-mode': 'import' };
@@ -66,16 +67,18 @@ async function startServer(provider: ProjectsProvider): Promise<void> {
 async function openDashboard(provider: ProjectsProvider, section: DashboardSection = 'overview', mode: 'native' | 'react' = 'native'): Promise<void> {
   if (mode === 'react') {
     if (dashboardPanel) {
-      dashboardPanel.reveal(vscode.ViewColumn.One);
-    } else {
-      dashboardPanel = vscode.window.createWebviewPanel(
-        'nestDevTools.reactDashboard',
-        'NestJS DevTools Live',
-        vscode.ViewColumn.One,
-        { enableScripts: true },
-      );
-      dashboardPanel.onDidDispose(() => { dashboardPanel = undefined; });
+      dashboardPanel.dispose();
     }
+    dashboardPanel = vscode.window.createWebviewPanel(
+      'nestDevTools.reactDashboard',
+      'NestJS DevTools Live',
+      vscode.ViewColumn.One,
+      {
+        enableScripts: true,
+        localResourceRoots: [vscode.Uri.joinPath(extensionRoot!, 'media')],
+      },
+    );
+    dashboardPanel.onDidDispose(() => { dashboardPanel = undefined; });
     dashboardPanel.webview.html = renderReactDashboard(dashboardPanel.webview);
     return;
   }
@@ -107,9 +110,14 @@ function renderReactDashboard(webview: vscode.Webview): string {
   const serverUrl = getConfig().serverUrl.replace(/\/$/, '');
   let origin = serverUrl;
   try { origin = new URL(serverUrl).origin; } catch { /* use configured URL */ }
-  const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionRoot!, 'media', 'webview.js'));
-  const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionRoot!, 'media', 'webview.css'));
-  return `<!doctype html><html><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src ${webview.cspSource}; style-src ${webview.cspSource} 'unsafe-inline'; connect-src ${escapeHtml(origin)} ws: wss:;"><link rel="stylesheet" href="${styleUri}"></head><body data-server-url="${escapeHtml(serverUrl)}"><div id="root"></div><script src="${scriptUri}"></script></body></html>`;
+  const bundle = readFileSync(vscode.Uri.joinPath(extensionRoot!, 'media', 'webview.js').fsPath, 'utf8');
+  const styles = readFileSync(vscode.Uri.joinPath(extensionRoot!, 'media', 'webview.css').fsPath, 'utf8');
+  const nonce = randomNonce();
+  return `<!doctype html><html><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}'; style-src 'unsafe-inline'; connect-src ${escapeHtml(origin)} ws: wss:;"><style>${styles}</style></head><body data-server-url="${escapeHtml(serverUrl)}"><div id="root"><div id="boot"><strong>NestJS DevTools</strong>Loading dashboard...</div></div><script nonce="${nonce}">window.addEventListener('error',function(event){var root=document.getElementById('root');root.innerHTML='<div id="boot"><strong>Dashboard error</strong><br>'+String(event.message||'Unable to load the React panel')+'</div>';});${bundle}</script></body></html>`;
+}
+
+function randomNonce(): string {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
 async function updateDashboard(panel: vscode.WebviewPanel, section: DashboardSection): Promise<void> {

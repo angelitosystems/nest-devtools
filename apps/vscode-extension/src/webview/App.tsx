@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 type Section = 'overview' | 'requests' | 'logs' | 'errors' | 'database' | 'performance';
 type Snapshot = {
@@ -36,7 +36,9 @@ export default function App() {
     try {
       socket = new WebSocket(wsUrl);
       socket.onopen = () => setConnected(true);
-      socket.onclose = () => setConnected(false);
+      // The HTTP snapshot is the source of truth for availability. A socket
+      // can reconnect independently without making the whole panel offline.
+      socket.onclose = () => undefined;
       socket.onmessage = (event) => {
         try { applyEvent(JSON.parse(event.data) as { event: string; payload: any }, setSnapshot); } catch { /* ignore malformed event */ }
       };
