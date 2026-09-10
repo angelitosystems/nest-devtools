@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "nest-devtools-monorepo",
+      "name": "nest-devtools",
       "devDependencies": {
         "@types/node": "^22.20.2",
         "typescript": "^5.9.3",
