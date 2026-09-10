@@ -117,6 +117,7 @@ export class WebsocketInstrumentation {
 
       if (method === 'handleMessage' || method === 'handleEvent') {
         const payload = this.extractPayload(args);
+        this.emitMessage('received', instance, args, payload, requestId, started);
         recordSpan(requestId, 'websocket', `ws.receive:${this.estimateEvent(args)}`, {
           detail: `gateway=${instance.constructor?.name} payload=${this.redactor.serialize(payload)}`,
         });
@@ -126,6 +127,7 @@ export class WebsocketInstrumentation {
         const result = await Promise.resolve(original.call(instance, ...args));
         if (method === 'handleMessage' || method === 'handleEvent') {
           const payload = this.extractPayload(args);
+          this.emitMessage('sent', instance, args, payload, requestId, started);
           recordSpan(requestId, 'websocket', `ws.send:${this.estimateEvent(args)}`, {
             detail: `gateway=${instance.constructor?.name} payload=${this.redactor.serialize(payload)}`,
             status: 'ok',
@@ -142,6 +144,29 @@ export class WebsocketInstrumentation {
         throw err;
       }
     };
+  }
+
+  private emitMessage(
+    direction: 'received' | 'sent',
+    instance: any,
+    args: any[],
+    payload: unknown,
+    requestId: string,
+    startedAt: number,
+  ): void {
+    const preview = this.redactor.redact(payload);
+    const serialized = this.redactor.serialize(payload);
+    emit('websocket.message', {
+      projectId: this.projectId,
+      gateway: instance.constructor?.name ?? this.estimateGatewayName(instance),
+      event: this.estimateEvent(args),
+      direction,
+      payloadSize: Buffer.byteLength(serialized, 'utf8'),
+      payloadPreview: preview,
+      requestId,
+      duration: Date.now() - startedAt,
+      timestamp: Date.now(),
+    } as GatewayMessagePayload);
   }
 
   private extractPayload(args: any[]): any {

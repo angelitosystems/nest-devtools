@@ -44,6 +44,24 @@ export class DatabaseInstrumentation {
       const dataSource = this.resolveTypeOrmDataSource(app);
       if (!dataSource) return false;
 
+      if (typeof dataSource.query === 'function') {
+        const originalQuery = dataSource.query.bind(dataSource);
+        dataSource.__nestDevToolsOriginalQuery = originalQuery;
+        dataSource.query = async (query: unknown, parameters?: unknown[]) => {
+          const started = Date.now();
+          this.startQuery(String(query), parameters ?? []);
+          try {
+            const result = await originalQuery(query, parameters);
+            this.endQuery(String(query), parameters ?? [], Date.now() - started);
+            return result;
+          } catch (error) {
+            this.endQuery(String(query), parameters ?? [], Date.now() - started, error);
+            throw error;
+          }
+        };
+        return true;
+      }
+
       const listener = {
         beforeQuery: (query: string, parameters: unknown[]) => {
           this.startQuery(query, parameters);
@@ -93,6 +111,23 @@ export class DatabaseInstrumentation {
       if (!app) return false;
       const prisma = this.resolvePrismaClient(app);
       if (!prisma) return false;
+
+      if (typeof prisma.$use === 'function') {
+        prisma.$use(async (params: any, next: (args: any) => Promise<unknown>) => {
+          const label = `${params.model ?? 'prisma'}.${params.action ?? 'query'}`;
+          const started = Date.now();
+          this.startQuery(label, [params.args]);
+          try {
+            const result = await next(params);
+            this.endQuery(label, [params.args], Date.now() - started);
+            return result;
+          } catch (error) {
+            this.endQuery(label, [params.args], Date.now() - started, error);
+            throw error;
+          }
+        });
+        return true;
+      }
 
       const original = prisma.$queryRaw ?? prisma.$executeRaw ?? null;
       if (!original) return false;
@@ -259,8 +294,8 @@ export class DatabaseInstrumentation {
 
   private resolveTypeOrmDataSource(app: any): any {
     try {
-      const dataSource = app.get(require('@nestjs/typeorm').TypeOrmModule)?.options?.DataSource ?? null;
-      if (dataSource && typeof dataSource.query === 'function') return dataSource;
+      const dataSource = this.findProvider(app, (value) => typeof value?.query === 'function' && typeof value?.manager === 'object');
+      if (dataSource) return dataSource;
       return null;
     } catch {
       return null;
@@ -269,7 +304,10 @@ export class DatabaseInstrumentation {
 
   private resolvePrismaClient(app: any): any {
     try {
-      const prisma = app.get('PrismaService') ?? app.get('PrismaClient') ?? app.get('prisma') ?? null;
+      const prisma = this.safeGet(app, 'PrismaService')
+        ?? this.safeGet(app, 'PrismaClient')
+        ?? this.safeGet(app, 'prisma')
+        ?? this.findProvider(app, (value) => typeof value?.$queryRaw === 'function');
       if (prisma && typeof prisma.$queryRaw === 'function') return prisma;
       return null;
     } catch {
@@ -279,8 +317,34 @@ export class DatabaseInstrumentation {
 
   private resolveMongoose(app: any): any {
     try {
-      const mongoose = app.get('MongooseService') ?? app.get('Mongoose') ?? app.get('mongoose') ?? null;
+      const mongoose = this.safeGet(app, 'MongooseService')
+        ?? this.safeGet(app, 'Mongoose')
+        ?? this.safeGet(app, 'mongoose')
+        ?? this.findProvider(app, (value) => typeof value?.plugin === 'function');
       if (mongoose && typeof mongoose.plugin === 'function') return mongoose;
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  private safeGet(app: any, token: string): any {
+    try {
+      return app?.get?.(token, { strict: false }) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  private findProvider(app: any, predicate: (value: any) => boolean): any {
+    try {
+      const modules = app?.container?.getModules?.() ?? new Map();
+      for (const module of modules.values()) {
+        for (const wrapper of (module.providers?.values?.() ?? [])) {
+          const instance = wrapper?.instance;
+          if (instance && predicate(instance)) return instance;
+        }
+      }
       return null;
     } catch {
       return null;

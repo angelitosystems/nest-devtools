@@ -172,6 +172,7 @@ export class HttpInstrumentation {
     const capturedBody = this.ctx.config.capture.requests && this.ctx.config.maxPayloadBytes > 0
       ? captureRequestPreview(req, this.redactor)
       : undefined;
+    const responseCapture = createResponseCapture(res, this.ctx.config.maxPayloadBytes, this.redactor);
 
     const onFinished = () => {
       const finishedAt = Date.now();
@@ -188,8 +189,9 @@ export class HttpInstrumentation {
       spans.push(responseSpan);
 
       const responseHeaders = this.collectResponseHeaders(res);
-      const responsePreview = this.ctx.config.capture.requests && this.ctx.config.maxPayloadBytes > 0
-        ? captureResponsePreview(res, this.redactor)
+      const responsePreview = responseCapture.read();
+      const requestBody = this.ctx.config.capture.requests && this.ctx.config.maxPayloadBytes > 0
+        ? captureRequestPreview(req, this.redactor)
         : undefined;
 
       const errored = res.statusCode >= 500;
@@ -204,10 +206,11 @@ export class HttpInstrumentation {
         duration: finishedAt - startedAt,
         startedAt,
         timeline: spans,
+        requestHeaders: started.headers,
         query: parseQuery(rawUrl),
         headers: responseHeaders,
         responsePreview,
-        requestBody: capturedBody,
+        requestBody: requestBody ?? capturedBody,
         errored,
       };
 
@@ -238,8 +241,7 @@ export class HttpInstrumentation {
 
   private collectRequestHeaders(req: IncomingMessage): Record<string, string> {
     const out: Record<string, string> = {};
-    for (const key of REQUEST_HEADERS) {
-      const value = req.headers[key];
+    for (const [key, value] of Object.entries(req.headers)) {
       if (value === undefined) continue;
       out[key] = this.redactor.isSensitive(key) ? '[REDACTED]' : asString(value).slice(0, 200);
     }
@@ -248,14 +250,11 @@ export class HttpInstrumentation {
 
   private collectResponseHeaders(res: ServerResponse): Record<string, string> {
     const out: Record<string, string> = {};
-    const headers = (res as unknown as Record<string, unknown>)._headers;
-    if (!headers || typeof headers !== 'object') return out;
+    const headers = typeof res.getHeaders === 'function' ? res.getHeaders() : {};
 
     for (const rawKey of Object.keys(headers)) {
       const key = rawKey.toLowerCase();
-      const ok = RESPONSE_HEADERS.some((h) => h.toLowerCase() === key);
-      if (!ok) continue;
-      const raw = (headers as any)[rawKey] as string | number | undefined ?? '';
+      const raw = headers[rawKey] as string | number | string[] | undefined ?? '';
       const value = String(raw);
       if (value === '') continue;
       out[key] = this.redactor.isSensitive(key) ? '[REDACTED]' : value.slice(0, 200);
@@ -354,6 +353,44 @@ function captureResponsePreview(res: ServerResponse, redactor: Redactor): string
   } catch {
     return undefined;
   }
+}
+
+function createResponseCapture(
+  res: ServerResponse,
+  maxBytes: number,
+  redactor: Redactor,
+): { read: () => string | undefined } {
+  if (maxBytes <= 0) return { read: () => undefined };
+  const chunks: Buffer[] = [];
+  let size = 0;
+  const originalWrite = res.write.bind(res);
+  const originalEnd = res.end.bind(res);
+  const capture = (chunk: unknown): void => {
+    if (chunk === undefined || chunk === null || size >= maxBytes) return;
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
+    const remaining = maxBytes - size;
+    chunks.push(buffer.subarray(0, remaining));
+    size += Math.min(buffer.length, remaining);
+  };
+  (res as any).write = (chunk: unknown, ...args: unknown[]) => {
+    capture(chunk);
+    return originalWrite(chunk as any, ...(args as any));
+  };
+  (res as any).end = (chunk?: unknown, ...args: unknown[]) => {
+    capture(chunk);
+    return originalEnd(chunk as any, ...(args as any));
+  };
+  res.once('finish', () => {
+    (res as any).write = originalWrite;
+    (res as any).end = originalEnd;
+  });
+  return {
+    read: () => {
+      if (chunks.length === 0) return undefined;
+      const raw = Buffer.concat(chunks).toString('utf8');
+      return redactor.redactString(raw);
+    },
+  };
 }
 
 export { safeUrlPath, parseQuery, clientIp, routeFromReq };

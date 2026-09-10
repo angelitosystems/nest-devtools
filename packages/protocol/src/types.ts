@@ -140,6 +140,7 @@ export interface RequestCompletedPayload {
   duration: number;
   startedAt: number;
   timeline: TimelineSpan[];
+  requestHeaders?: Record<string, string>;
   query?: Record<string, unknown>;
   headers?: Record<string, string>;
   responsePreview?: string;
@@ -222,6 +223,7 @@ export interface GatewayMessagePayload {
   event: string;
   direction: 'received' | 'sent';
   payloadSize: number;
+  payloadPreview?: unknown;
   error?: string;
   duration?: number;
   requestId?: string;

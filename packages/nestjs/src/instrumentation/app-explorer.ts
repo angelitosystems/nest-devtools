@@ -13,6 +13,8 @@ interface ContainerNode {
   metatype?: Function;
   instance?: object;
   subtype?: 'httpController' | 'gateway';
+  controllers?: Map<string, unknown>;
+  providers?: Map<string, unknown>;
 }
 
 /**
@@ -67,7 +69,15 @@ export class AppExplorer {
     const controllers: AppMemberNode[] = [];
     const providers: AppMemberNode[] = [];
 
-    const providersMap = (node as unknown as { providers?: Map<string, unknown> }).providers;
+    const controllersMap = node.controllers;
+    if (controllersMap instanceof Map) {
+      for (const [id, wrapper] of controllersMap) {
+        const member = this.memberFromWrapper(id, wrapper, 'controller');
+        if (member) controllers.push(member);
+      }
+    }
+
+    const providersMap = node.providers;
     if (providersMap instanceof Map) {
       for (const [id, wrapper] of providersMap) {
         const member = this.memberFromWrapper(id, wrapper);
@@ -83,10 +93,10 @@ export class AppExplorer {
     return { controllers, providers };
   }
 
-  private memberFromWrapper(id: string, wrapper: unknown): AppMemberNode | null {
+  private memberFromWrapper(id: string, wrapper: unknown, forcedType?: AppMemberNode['type']): AppMemberNode | null {
     const w = wrapper as { name?: string; metatype?: Function; subtype?: string; instance?: Record<string, unknown> } | null;
     const name = w?.metatype?.name ?? (typeof id === 'string' ? id.replace(/^[A-Z_0-9]+:/, '') : 'unknown');
-    const type = classify(name, w?.instance);
+    const type = forcedType ?? classify(name, w?.instance);
     const routes = type === 'controller' ? extractControllerRoutes(w?.metatype) : undefined;
     return { name, type, routes };
   }
