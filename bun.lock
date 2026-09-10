@@ -116,6 +116,7 @@
       "dependencies": {
         "@angelitosystems/devtools-core": "workspace:*",
         "@angelitosystems/devtools-protocol": "workspace:*",
+        "@angelitosystems/nest-devtools-cli": "workspace:*",
       },
       "devDependencies": {
         "@nestjs/common": "^12.0.1",

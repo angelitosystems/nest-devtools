@@ -37,7 +37,8 @@
   ],
   "dependencies": {
     "@angelitosystems/devtools-core": "workspace:*",
-    "@angelitosystems/devtools-protocol": "workspace:*"
+    "@angelitosystems/devtools-protocol": "workspace:*",
+    "@angelitosystems/nest-devtools-cli": "workspace:*"
   },
   "peerDependencies": {
     "@nestjs/common": "^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0",

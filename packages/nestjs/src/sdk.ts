@@ -19,6 +19,7 @@ import { printStartupBanner, printConnectionStatus } from './banner';
 import { PluginManager } from './plugins';
 import type { DevToolsPlugin } from './plugins';
 import type { ProfileKind, ProfileResult } from '@angelitosystems/devtools-core';
+import { DevToolsServer } from '@angelitosystems/nest-devtools-cli';
 
 /** Result of calling NestDevTools.init(). */
 export interface InitResult {
@@ -31,7 +32,11 @@ export interface InitResult {
   server: string;
 }
 
-export type NestDevToolsOptions = DevToolsUserConfig & { plugins?: DevToolsPlugin[] };
+export type NestDevToolsOptions = DevToolsUserConfig & {
+  plugins?: DevToolsPlugin[];
+  /** Start the local dashboard and WebSocket server in this process. */
+  embedded?: boolean;
+};
 
 /**
  * Main entry point: `NestDevTools.init(app, config?)`.
@@ -42,6 +47,7 @@ export type NestDevToolsOptions = DevToolsUserConfig & { plugins?: DevToolsPlugi
 export class NestDevTools {
   private static readonly cleanups: Array<() => void> = [];
   private static initialized = false;
+  private static embeddedServer: DevToolsServer | null = null;
 
   /** Initialize DevTools for a NestJS application. One active instance per process. */
   static init(app: INestApplication, userConfig?: NestDevToolsOptions): InitResult {
@@ -59,6 +65,18 @@ export class NestDevTools {
 
     this.initialized = true;
     const registerCleanup = (fn: () => void) => this.cleanups.push(fn);
+
+    if (userConfig?.embedded !== false) {
+      const embeddedServer = createEmbeddedServer(config.server);
+      this.embeddedServer = embeddedServer;
+      void embeddedServer.start().catch(() => {
+        // An existing CLI server can own these ports; the SDK will connect to it.
+      });
+      registerCleanup(() => {
+        void embeddedServer.stop().catch(() => {});
+        if (this.embeddedServer === embeddedServer) this.embeddedServer = null;
+      });
+    }
 
     const projectInfo: ProjectInfo = {
       projectId: config.projectId,
@@ -207,6 +225,17 @@ function dashboardUrl(server: string): string {
   } catch {
     return 'http://localhost:4317';
   }
+}
+
+function createEmbeddedServer(server: string): DevToolsServer {
+  const url = new URL(server);
+  const wsPort = Number(url.port || 4318);
+  const httpPort = wsPort > 1 ? wsPort - 1 : 4317;
+  return new DevToolsServer({
+    host: url.hostname || 'localhost',
+    httpPort,
+    wsPort,
+  });
 }
 
 export { captureError };
