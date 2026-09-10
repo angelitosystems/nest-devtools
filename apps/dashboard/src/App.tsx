@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   ListTree,
   Radio,
+  Route,
   ScrollText,
   Trash2,
   Zap,
@@ -22,6 +23,7 @@ import LogsPage from './pages/Logs';
 import ErrorsPage from './pages/Errors';
 import PerformancePage from './pages/Performance';
 import ApplicationPage from './pages/Application';
+import RoutesPage from './pages/Routes';
 import DatabasePage from './pages/Database';
 import WebSocketsPage from './pages/WebSockets';
 
@@ -35,7 +37,8 @@ type PageId =
   | 'performance'
   | 'modules'
   | 'controllers'
-  | 'providers';
+  | 'providers'
+  | 'routes';
 
 interface NavItem {
   id: PageId;
@@ -62,6 +65,7 @@ const NAV: Array<{ section: string; items: NavItem[] }> = [
   {
     section: 'Application',
     items: [
+      { id: 'routes', label: 'Routes', icon: Route },
       { id: 'modules', label: 'Modules', icon: Boxes },
       { id: 'controllers', label: 'Controllers', icon: ListTree },
       { id: 'providers', label: 'Providers', icon: Zap },
@@ -100,6 +104,7 @@ export default function App() {
     modules: 'all',
     controllers: 'all',
     providers: 'all',
+    routes: 'all',
   };
 
   return (
@@ -121,6 +126,7 @@ export default function App() {
           {page === 'performance' && <PerformancePage store={filtered} />}
           {page === 'database' && <DatabasePage store={filtered} />}
           {page === 'websockets' && <WebSocketsPage store={filtered} />}
+          {page === 'routes' && <RoutesPage store={filtered} />}
           {(page === 'modules' || page === 'controllers' || page === 'providers') && (
             <ApplicationPage store={filtered} focus={page} />
           )}

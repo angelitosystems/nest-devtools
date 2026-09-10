@@ -296,6 +296,7 @@ export interface AppSnapshot {
   modules: AppModuleNode[];
   nestjsVersion: string | null;
   capturedAt: number;
+  globals?: AppGlobals;
 }
 
 /** A module and its members in the application graph. */
@@ -311,7 +312,41 @@ export interface AppModuleNode {
 export interface AppMemberNode {
   name: string;
   type: 'controller' | 'provider' | 'guard' | 'interceptor' | 'pipe' | 'filter' | 'gateway';
+  /** @deprecated use `routeDetails` — kept for backward compatibility with older dashboards. */
   routes?: string[];
+  /** Controller base path, e.g. 'users' (before global prefix/versioning is applied). */
+  basePath?: string;
+  routeDetails?: RouteNode[];
+}
+
+/** A single HTTP route (one controller method) with everything needed to render it like a Postman collection entry. */
+export interface RouteNode {
+  method: string;
+  /** Full path including global prefix + version + controller path + method path. */
+  path: string;
+  handlerName: string;
+  guards: string[];
+  interceptors: string[];
+  pipes: string[];
+  filters: string[];
+  /** Parameter (usually @Body()) resolved to a DTO shape, when detectable. */
+  dto?: DtoShape | null;
+}
+
+/** Best-effort shape of a DTO class used as a route's body/param. */
+export interface DtoShape {
+  name: string;
+  fields: Array<{ name: string; type: string; optional: boolean; rules: string[] }>;
+}
+
+/** Global middleware-ish info that applies to every route (APP_GUARD/APP_INTERCEPTOR/APP_FILTER/APP_PIPE, prefix, versioning). */
+export interface AppGlobals {
+  prefix: string | null;
+  versioning: { type: string; defaultVersion?: string | string[] } | null;
+  guards: string[];
+  interceptors: string[];
+  filters: string[];
+  pipes: string[];
 }
 
 /** What a dashboard/control client announces when it connects. */
